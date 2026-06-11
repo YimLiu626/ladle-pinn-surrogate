@@ -1,0 +1,61 @@
+{
+  "date": "2026-06-11",
+  "pipeline": "v3 final",
+  "model": "6x128 SiLU MLP, N_INPUT=5 (x,y,z,Q,m)",
+  "training": "pure MSE, 2000ep, Adam lr=1e-3, batch=8192",
+  "normalization": "z-score per channel (u,v,w,p)",
+  "data": "5Q x 12-col VOF, argon+air merged, alpha_steel>0.01 filter",
+  "results": {
+    "best_model": {
+      "R2_interp": 0.9072,
+      "R2_extrap": 0.8938,
+      "per_field": {"u": 0.872, "v": 0.899, "w": 0.923, "p": 0.986}
+    },
+    "multi_seed": {
+      "mean_R2": 0.8894,
+      "std_R2": 0.0015,
+      "seeds": [42, 123, 456]
+    },
+    "per_Q": {
+      "Q40": 0.8905,
+      "Q60": 0.9173,
+      "Q80": 0.9182,
+      "Q100": 0.9032,
+      "Q120": 0.8807
+    },
+    "BC_ablation": {
+      "lb=0": 0.8982,
+      "lb=0.01": 0.8883,
+      "lb=0.1": 0.8603,
+      "lb=1.0": 0.8336
+    }
+  },
+  "files": {
+    "model": "models/best_model.pt",
+    "pure_data": "models/pure_data.pt",
+    "data": "data/cfd/bottom/q*-1.csv (5 files, 12 col)",
+    "bc": "data/bc/q*_wall.csv (5 files, 12 col)",
+    "plan": "results/FINAL_PLAN_v3.pdf"
+  },
+  "key_findings": [
+    "z-score normalization is critical (U_ref/P_ref fails)",
+    "VOF filtering alone sufficient; soft weighting no benefit",
+    "Wall BC does not improve R2",
+    "Extrapolation degradation minimal (0.907 vs 0.894)",
+    "Multi-seed stability excellent (std=0.0015)"
+  ],
+  "pending": [
+    "6 baselines (KAN, Kriging, POD-ROM, DeepONet + MLP comparison)",
+    "Physics ablation with proper continuity scaling",
+    "VOF ablation (full/hard/soft)",
+    "Slag eye detection (alpha_slag < 0.5)",
+    "MC Dropout uncertainty",
+    "Paper figures"
+  ],
+  "verified_data": {
+    "VOF_sum_equals_1": "100% for all 5 Q",
+    "velocity_monotonicity": "18 layers x 5 Q, 0 violations",
+    "interface_consistency": "z=1.865m steel<0.5, identical across 5 Q",
+    "wall_BC_coordinates": "41803 unique points, no overlap with field centers"
+  }
+}
