@@ -136,6 +136,60 @@ python src/run_baselines.py
 python src/inference.py
 ```
 
+## Project Explanation
+
+### Problem Setting
+
+Argon-stirred ladle furnace (LF) refining is a critical secondary metallurgy process. During bottom argon injection, buoyancy-driven bubble plumes generate strong recirculation in the molten steel bath, enhancing mixing and inclusion transport toward the slag layer. CFD simulation using VOF + DPM is the standard tool for studying this system, but a single steady-state case requires ~36 hours. When multiple gas flow rates (Q) and nozzle positions must be evaluated, repeated CFD becomes prohibitive.
+
+### Approach
+
+This work develops a **CFD-informed surrogate model** that learns to predict the full 3D velocity field from operating parameters alone — replacing expensive CFD with a feed-forward neural network that executes in ~5 seconds per condition.
+
+**The key insight** is that the three-phase (argon/slag/steel) system spans four orders of magnitude in density, making full-domain physics losses ill-conditioned. In pure-steel cells (α_steel → 1), the VOF mixture equations reduce rigorously to single-phase incompressible RANS. By simply filtering training data to α_steel > 0.01, the problem is restricted to the region where physics is well-defined, without requiring explicit interface boundary conditions.
+
+### Methods
+
+**Architecture**: An 8×384 SiLU-activated multilayer perceptron maps (x, y, z, Q, m) → (u, v, w, p), where m ∈ {0,1} encodes the injection position (center vs. eccentric bottom nozzle). A 6×128 variant is used for ablation studies to reduce computational cost.
+
+**Training**: Two-phase strategy — 500 epochs data-only, followed by up to 2500 epochs with optional continuity constraint. Adam optimizer (lr=10⁻³), batch size 8192, z-score normalization per output channel. Training completes in ~5 minutes on an RTX 5070 8GB GPU.
+
+**Baselines**: Six methods compared — POD-ROM (SVD spatial modes + RBF coefficient interpolation), DeepONet (branch/trunk operator learning), Kriging GPR (sparse Gaussian process with 2000 inducing points), KAN (Kolmogorov-Arnold Networks), and two MLP variants (6×128, 8×384).
+
+### Experiments
+
+Eleven experiments systematically evaluate the surrogate:
+
+1. **λ sensitivity sweep**: Continuity weight robust over [10⁻⁵, 10⁻¹]; BC weight provides zero benefit
+2. **ν_t ablation**: Mixing-length, constant, and laminar ν_t all yield identical results — momentum residual does not help
+3. **Physics term ablation**: Continuity adds +0.014 R² for the 6×128 model; BC and momentum add nothing
+4. **Baseline comparison**: POD-ROM (0.994) > 8×384 MLP (0.983) > 6×128 MLP (0.904) > PINN+cont (0.873) > DeepONet (−0.72)
+5. **Cross-position generalization**: Center-trained model collapses on eccentric data (R² < 0); joint m∈{0,1} training recovers R² = 0.94–0.97
+6. **Convergence analysis**: Smooth convergence; errors concentrated in high-gradient plume core
+7. **Extrapolation**: Near-zero degradation from Q=80 (training max) to Q=120
+8. **VOF ablation**: Soft filtering (+0.344 R² over hard mask) is the single most impactful design choice
+9. **l_m sensitivity**: No measurable effect (0.005–0.05 m)
+10. **Multi-seed stability**: 0.978 ± 0.001 for 8×384 joint model
+11. **Slag eye detection**: α_slag < 0.5 criterion at z = 1.85 m; 60.2% exposed area at Q=120 NL/min
+
+### Key Findings
+
+1. **VOF filtering is the dominant design factor.** Restricting training to steel-phase cells accounts for +0.344 R² — far more than physics constraints or architecture choices.
+
+2. **POD-ROM is the best center-blowing baseline, but cannot cross positions.** Two SVD modes capture all snapshot variance from three training Q values; thin-plate-spline interpolation achieves R² = 0.994. However, POD spatial modes are configuration-specific and fail on eccentric data (R² < 0). Unlike the MLP, POD offers no mechanism for categorical input variables. Each nozzle position requires an independent POD model — the proposed surrogate replaces two with one.
+
+3. **Physics regularization offers diminishing returns at scale.** The 6×128 model benefits from continuity (+0.014 R²); the 8×384 model does not. Momentum residuals never help because DPM bubble buoyancy — the actual plume driver — is absent from the homogeneous RANS formulation used in the PINN.
+
+4. **Extrapolation is not a problem for this problem class.** Q-dependent flow variation is sufficiently smooth that three training points support accurate prediction at +50% beyond the training range.
+
+5. **Parameterization is more powerful than physics.** The binary m variable — trivially implemented as an additional input channel — enables cross-position generalization that POD fundamentally cannot achieve, and does so without requiring physics-informed training.
+
+### Reproducibility
+
+All experiments are deterministic (fixed random seeds). The complete experiment pipeline — from data loading through training to figure generation — is self-contained in the `src/` directory. Result JSON files in `results/` contain exact numerical values for all tables and figures in the paper.
+
+---
+
 ## Key Design Decisions
 
 1. **VOF filtering > soft weighting**: Restricting to α_steel > 0.01 accounts for +0.344 R² improvement. Soft weighting adds negligible marginal benefit after filtering.
@@ -152,7 +206,7 @@ python src/inference.py
 @article{liu2026surrogate,
   title   = {A CFD-Informed Surrogate for Rapid Flow Prediction in an Argon-Stirred Ladle:
              VOF-Based Domain Decomposition, Cross-Position Generalization, and Multi-Baseline Benchmarking},
-  author  = {Liu, Yiming and Zhang, Wentao and Wang, Xutong and Wu, Guangxin},
+  author  = {Liu, Y. and Zhang, W. and Wang, X. and Wu, G.},
   journal = {Advances in Manufacturing},
   year    = {2026},
   note    = {Under review}
@@ -172,5 +226,5 @@ MIT License — see [LICENSE](LICENSE) file.
 
 ## Contact
 
-Yiming Liu — School of Materials Science and Engineering, Shanghai University  
-Guangxin Wu (corresponding) — gxwu@shu.edu.cn
+School of Materials Science and Engineering, Shanghai University  
+State Key Laboratory of Advanced Special Steel, Shanghai 200444, PR China
