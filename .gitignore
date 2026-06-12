@@ -1,0 +1,29 @@
+# CFD data files (177 MB each — too large for GitHub)
+data/
+
+# Model checkpoints (large binary files)
+models/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+paper/*.synctex*
+
+# Archives
+_archive/
+src/_archive/
+
+# Old results (keep only final ones)
+results/*_old/
+results/figures/
+
+# OS files
+.DS_Store
+Thumbs.db

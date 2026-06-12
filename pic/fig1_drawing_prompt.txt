@@ -1,0 +1,93 @@
+Figure 1: CFD-VOF-PINN Surrogate Framework — AI Drawing Prompt
+================================================================
+
+## Overall Layout
+A scientific flowchart showing the proposed CFD-VOF-PINN surrogate framework for ladle flow prediction.
+Horizontal two-row layout, clean academic style, white background, professional color scheme.
+
+## TOP ROW: Four-stage pipeline (left to right, connected by rightward arrows)
+
+### Stage 1 Box: "1. CFD Simulation" (dark navy #1B2A4A, white text)
+Sub-text inside box:
+- VOF multiphase model
+- Realizable k-epsilon turbulence
+- DPM argon injection
+- 5 center + 3 eccentric cases
+
+### Arrow (gray #94A3B8, pointing right)
+
+### Stage 2 Box: "2. Data Preprocessing" (blue #2563EB, white text)
+Sub-text inside box:
+- VOF steel-phase filtering (alpha_s > 0.01)
+- Z-score normalization per channel
+- Argon + air VOF merge
+- 12-column CSV format
+
+### Arrow (gray, pointing right)
+
+### Stage 3 Box: "3. PINN Training" (purple #7C3AED, white text)
+Sub-text inside box:
+- 8 x 384 SiLU MLP (1.04M params)
+- Input: (x, y, z, Q, m)
+- Output: (u, v, w, p)
+- Continuity constraint + Wall BC
+
+### Arrow (gray, pointing right)
+
+### Stage 4 Box: "4. Surrogate Deployment" (red #DC2626, white text)
+Sub-text inside box:
+- 5 seconds per case (vs. 36 h CFD)
+- R^2 = 0.983 (center-blowing)
+- R^2 = 0.94-0.97 (eccentric)
+- Cross-position capable
+
+## BOTTOM ROW: Three supporting pillars (aligned under the pipeline, connected by downward arrows)
+
+### Pillar 1 Box: "Physical Basis" (dark navy #1B2A4A, white text)
+Sub-text inside box:
+- In pure-steel cells (alpha_steel -> 1):
+- VOF mixture -> single-phase RANS
+- (exact reduction, no approximation)
+- Soft spatial decay near interface
+- Continuity constraint in physical space
+
+### Pillar 2 Box: "Validation Suite" (purple #7C3AED, white text)
+Sub-text inside box:
+- 11 experiments + 6 baselines
+- Multi-seed: 0.978 +/- 0.001
+- Extrapolation: zero degradation
+- Cross-position generalization
+- VOF + physics ablation studies
+
+### Pillar 3 Box: "Industrial Impact" (green #10B981, white text)
+Sub-text inside box:
+- Single surrogate for multi-nozzle ladles
+- m = 0 (center) / m = 1 (eccentric)
+- 5-second inference for real-time use
+- Next: transient slag eye + inclusion removal
+
+## TITLE (centered above everything)
+"CFD-VOF-PINN Surrogate Framework" — large bold text (#1E293B dark slate), horizontal rule line below
+
+## VISUAL STYLE REQUIREMENTS
+- All boxes: rounded corners (radius ~8px), no borders, subtle shadow or flat design
+- Arrows: clean straight lines with arrowheads, gray #94A3B8, 2-3px width
+- Font: sans-serif (e.g., Inter, Helvetica, or Arial)
+- Title text: 14pt bold white; Sub-text: 9pt light gray (#CBD5E1)
+- Overall figure dimensions: approximately 14 x 5.5 inches
+- White/off-white background (#FAFBFC)
+- No unnecessary decorative elements
+- Professional academic journal style (similar to Elsevier/Nature figures)
+- Section labels on left side optional: "Data Generation" / "Physics-Informed Training" / "Surrogate Deployment" / "Application" in small gray text below each group
+
+## COLOR REFERENCE
+- Box 1 (CFD):    #1B2A4A (dark navy)
+- Box 2 (Data):   #2563EB (blue)
+- Box 3 (PINN):   #7C3AED (purple)
+- Box 4 (Deploy): #DC2626 (red)
+- Pillar 1:       #1B2A4A (navy)
+- Pillar 2:       #7C3AED (purple)
+- Pillar 3:       #10B981 (green)
+- Arrows:         #94A3B8 (slate gray)
+- Title text:     #1E293B (dark slate)
+- Background:     #FAFBFC (off-white)
