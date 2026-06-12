@@ -213,7 +213,12 @@ All experiments are deterministic (fixed random seeds). The complete experiment 
 }
 ```
 
-## Companion Repository
+## Model Zoo
+
+Pre-trained models, inference demo, and benchmark scripts are available in the companion repository:  
+[**PINN Model Zoo**](https://github.com/YimLiu626/pinn-model-zoo) — ready-to-use `.pt` weights, single-command inference, and unified benchmark across all test cases.
+
+## Companion Repositories
 
 CFD-DPM bucket search method for bubble-inclusion contact screening:  
 [github.com/YimLiu626/-ladle-cfd-bucket-screening](https://github.com/YimLiu626/-ladle-cfd-bucket-screening)
