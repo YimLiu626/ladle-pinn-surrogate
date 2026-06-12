@@ -206,7 +206,7 @@ All experiments are deterministic (fixed random seeds). The complete experiment 
 @article{liu2026surrogate,
   title   = {A CFD-Informed Surrogate for Rapid Flow Prediction in an Argon-Stirred Ladle:
              VOF-Based Domain Decomposition, Cross-Position Generalization, and Multi-Baseline Benchmarking},
-  author  = {Liu, Y. and Zhang, W. and Wang, X. and Wu, G.},
+  author  = {Liu, Y.},
   journal = {Advances in Manufacturing},
   year    = {2026},
   note    = {Under review}
@@ -229,7 +229,6 @@ The companion paper (under review at *Advances in Manufacturing*) describes the 
 
 MIT License — see [LICENSE](LICENSE) file.
 
-## Contact
+## Author
 
-School of Materials Science and Engineering, Shanghai University  
-State Key Laboratory of Advanced Special Steel, Shanghai 200444, PR China
+Yiming Liu — [@YimLiu626](https://github.com/YimLiu626)
