@@ -1,0 +1,41 @@
+{
+  "deeponet": {
+    "r2": -0.7206079959869385,
+    "perQ": {
+      "40": -0.8969,
+      "60": -0.9714,
+      "80": -0.9661,
+      "100": -0.7196,
+      "120": -0.7317
+    },
+    "params": 57722
+  },
+  "mlp_large": {
+    "r2": 0.9838297963142395,
+    "perQ": {
+      "40": 0.9672,
+      "60": 0.9776,
+      "80": 0.9828,
+      "100": 0.9852,
+      "120": 0.9848
+    },
+    "params": 1038724
+  },
+  "pinn_6x128": {
+    "r2_int": 0.9072,
+    "r2_ext": 0.8938,
+    "note": "best from full_train"
+  },
+  "kriging": {
+    "r2": null,
+    "note": "sparseGPR_2000pts_failed_OOM_and_nonconvergence"
+  },
+  "pod_rom": {
+    "r2": null,
+    "note": "requires_uniform_grid_interpolation"
+  },
+  "kan": {
+    "r2": null,
+    "note": "pykan_windows_install_issues"
+  }
+}

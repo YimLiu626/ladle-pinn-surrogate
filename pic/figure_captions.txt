@@ -1,0 +1,21 @@
+Figure 1: Overview of the proposed CFD-VOF-PINN surrogate framework. [to be drawn manually]
+
+Figure 2: VOF phase stratification. (a) Three-phase (steel, slag, argon) vertical distribution averaged across five center-blowing conditions. Shaded bands indicate phase regions. The steel-slag interface at z=1.85 m is marked with a dashed line and arrow annotation. (b) Zoom-in on the interface region (1.75-1.95 m) showing steel volume fraction for individual Q values. All five Q values exhibit nearly identical stratification profiles.
+
+Figure 3: Centerline velocity comparison. (a) Center-blowing velocity profiles (CFD: solid; PINN: dashed) for Q=40,60,80 (training) and Q=100,120 (extrapolation). Shaded bands indicate CFD-PINN discrepancy. (b) Eccentric-blowing velocity profiles (Q=40,80,120) at the off-center plume position (x=0.47 m). (c) Center-blowing relative error along centerline. Vertical dashed line marks the 10% error threshold. (d) Eccentric-blowing relative error.
+
+Figure 4: Pointwise velocity magnitude comparison: predicted vs. CFD. Panels (a-e): individual Q values (40-120 NL/min). Panel (f): all five Q values combined. Dashed line indicates perfect agreement. KDE density contours and shaded envelopes highlight the prediction distribution. R-squared values are shown per panel.
+
+Figure 5: Ablation and baseline comparison. (a) Physics term ablation. Dashed line marks the pure-data reference (R-squared = 0.859). Continuity constraint provides the only measurable improvement (+0.014 R-squared). (b) Baseline comparison. POD-ROM achieves the highest center-blowing accuracy (R-squared = 0.994); MLP 8x384 follows at 0.983; DeepONet fails (R-squared = -0.72).
+
+Figure 6: Cross-position generalization. PINN center-only vs. PINN joint (m in {0,1}) vs. POD center-only. Center-only models collapse on eccentric data; joint PINN recovers R-squared = 0.94-0.97; POD fails catastrophically (R-squared < 0).
+
+Figure 7: POD cross-position failure vs. PINN generalization at Q=120 NL/min. (a) POD trained on center data, tested on center: R-squared = 0.994. (b) Same POD model tested on eccentric data: R-squared = -1.40. (c) Joint PINN on eccentric data: R-squared = 0.969. Bottom panel: error distribution histogram comparing POD center Q120, POD blind eccentric Q120, and PINN eccentric Q120.
+
+Figure 8: Convergence analysis for the 6x128 MLP. (a) Training loss (MSE, log scale). (b) R-squared evolution for pure-data and continuity-regularized training. (c) R-squared at key checkpoints (500, 1000, 1500, 2000 epochs).
+
+Figure 9: Performance summary and sensitivity. (a) Per-condition R-squared for the 8x384 MLP (training vs. extrapolation). (b) Multi-seed ensemble analysis: R-squared = 0.978 +/- 0.001 for the joint 8x384 model. (c) VOF strategy ablation: soft filtering (alpha_steel > 0.01) outperforms hard thresholding (alpha_steel > 0.5) by +0.344 R-squared.
+
+Figure 10: Three-dimensional plume core visualization (|U| > 0.03 m/s, steel phase). Panels (a-e): center-bottom blowing at Q=40-120 NL/min. Panel (f): steel-phase velocity volume rendering at Q=120 NL/min. Panels (g-i): eccentric-bottom blowing at Q=40,80,120 NL/min, at the off-center plume position (x approximately 0.47 m). Section labels on the left side separate center and eccentric configurations.
+
+Figure 11: Three-dimensional PINN prediction error distribution (|U_pred - U_CFD|, steel phase). Panels (a-e): center-blowing at Q=40-120 NL/min. Panel (f): error histogram comparing center and eccentric Q=120. Panels (g-i): eccentric-blowing at Q=40-120 NL/min. Error magnitude is discretized into 15 levels from 0 to 0.03 m/s (YlOrRd colormap). Thin gray frame outlines indicate the truncated-cone ladle geometry with z=1.85 m interface. Section labels separate center and eccentric configurations.

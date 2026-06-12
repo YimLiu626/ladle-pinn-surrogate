@@ -1,0 +1,22 @@
+{
+  "slag_eye": {
+    "cfd": {
+      "n_eye": 27021,
+      "n_total": 44893,
+      "frac": 0.6018978459893525
+    },
+    "pinn_p_based": {
+      "n_eye": 16978,
+      "frac": 0.37818813623504777
+    },
+    "method": "alpha_slag < 0.5 (CFD), p deviation (PINN)",
+    "interface_z": 1.85,
+    "note": "PINN does not predict VOF; slag eye inferred from pressure/velocity anomaly"
+  },
+  "uncertainty": {
+    "multi_seed_std": 0.0011,
+    "multi_seed_mean": 0.9775,
+    "cv_percent": 0.11253196930946292,
+    "method": "3-seed ensemble"
+  }
+}

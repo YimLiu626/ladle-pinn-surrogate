@@ -1,0 +1,195 @@
+CFD; Physics-informed neural network; Surrogate modeling; Ladle furnace; VOF; Cross-position generalization
+
+Introduction
+
+Ladle furnace (LF) refining is a critical secondary metallurgy process for controlling steel cleanliness, thermal uniformity, and compositional homogeneity . During bottom argon stirring, the injected gas forms a buoyancy-driven plume that induces strong recirculation in the molten steel bath . This plume-driven motion enhances mixing and promotes the upward transport of inclusions toward the slag layer . Excessively strong stirring may intensify slag–metal interfacial deformation, expose the steel to the atmosphere through slag eye formation, and increase re-oxidation risk .
+
+CFD has become a standard tool for studying ladle hydrodynamics . The discrete phase model (DPM) coupled with VOF has emerged as a practical approach for simulating argon-stirred ladle flow . However, high-fidelity three-dimensional multiphase simulations remain expensive—a single case may require upwards of 36 hours.
+
+Machine learning surrogates can provide predictions orders of magnitude faster than numerical simulation . Physics-informed neural networks (PINNs) incorporate governing-equation residuals into training , and have been applied to various fluid mechanics problems . Challenges include training instability and sharp interfaces across large density ratios .
+
+A key challenge specific to ladle-flow surrogates is the multiphase nature—three immiscible phases spanning four orders of magnitude in density. We propose a VOF-masked PINN framework: in pure-steel cells ($\alpha_{\rm steel} \to 1$), the VOF mixture equations reduce to single-phase incompressible RANS. Restricting physics to the steel phase avoids ill-conditioned multiphase residuals. A binary injection-position parameter m ∈ {0, 1} enables a single model for both center-bottom and eccentric-bottom blowing.
+
+Contributions: (1) VOF-masked PINN with soft phase restriction, (2) m parameterization for cross-position generalization, (3) six-baseline comparison, (4) uncertainty quantification via multi-seed ensemble, (5) surrogate achieving R² = 0.983 with 5-second inference.
+
+CFD Model
+
+Geometry and Computational Domain
+
+The ladle geometry was modeled as a truncated cone (Table 1). Argon is introduced through a bottom nozzle at the center (m = 0) or at one-third radius (m = 1, x ≈ 0.47 m). DPM treats argon bubbles as Lagrangian particles.
+
+  Parameter                         Value
+  --------------------------- -----------------
+  Upper / lower diameter       2.077 / 1.832 m
+  Steel + slag height              1.85 m
+  Slag thickness                   0.15 m
+  Nozzle diameter                  0.08 m
+  Eccentric nozzle position     (0.47, 0, 0)
+
+  : Main dimensions of the ladle model.
+
+Mesh and Turbulence Modeling
+
+An unstructured tetrahedral mesh with 9.32 × 10⁵ cells was generated (Table 2). Turbulence was modeled with realizable k–ε .
+
+  Level       Cells     |U|_(max) (m/s)   Rel. diff. (%)
+  -------- ----------- ----------------- ----------------
+  Coarse     612,450         0.392            10.09
+  Medium     932,080         0.431             1.40
+  Fine      1,356,740        0.436              —
+
+  : Mesh-independence study.
+
+Dataset and Quality
+
+CFD solutions were exported at cell centers (12-column CSV). Five center-blowing conditions (Q = 40–120 NL/min) and three eccentric-blowing conditions (Q = 40, 80, 120 NL/min) were generated. All datasets satisfy ∑α_(i) ≡ 1 for every cell. Velocity monotonicity with Q was verified for all 18 vertical layers (zero violations, Table 3).
+
+  z (m)    Q = 40   Q = 60   Q = 80   Q = 100   Q = 120
+  ------- -------- -------- -------- --------- ---------
+  0.5      0.009    0.010    0.011     0.012     0.014
+  1.0      0.017    0.022    0.025     0.027     0.031
+  1.5      0.027    0.033    0.037     0.039     0.043
+  1.8      0.044    0.053    0.059     0.063     0.069
+
+  : Velocity monotonicity: mean |U| (m/s) at selected heights.
+
+Methodology
+
+[]
+
+VOF-Informed Domain Decomposition
+
+In pure-steel cells ($\alpha_{\rm steel} \to 1$), the VOF mixture equations reduce to single-phase incompressible RANS. Soft pointwise weights restrict physics constraints: $w_{\rm data} = \text{clamp}(\alpha_{\rm steel}, 0.01, 1.0)$ and $w_{\rm pde} = w_{\rm data} \cdot 0.5[1 + \cos(\pi \cdot \min((z_{\rm top}-z)/T, 1))]$ with $z_{\rm top} = 1.85$ m, T = 0.20 m. Verified phase stratification confirms identical layering for all Q values (Table 4, Fig. 2).
+
+  z (m)        $\bar{\alpha}_{\rm steel}$   $\bar{\alpha}_{\rm slag}$   $\bar{\alpha}_{\rm argon}$
+  ----------- ---------------------------- --------------------------- ----------------------------
+  0–1.6                  1.000                        0.000                       0.000
+  1.6–1.85               0.731                        0.269                       0.000
+  1.85–2.05              0.000                        0.701                       0.299
+  2.05–2.55              0.000                        0.000                       1.000
+
+  : Verified phase stratification.
+
+[]
+
+Network Architecture and Training
+
+The model maps (x, y, z, Q, m) to (û, v̂, ŵ, p̂) via an 8 × 384 SiLU MLP (1.04M parameters). A 6 × 128 variant is used for ablation. Inputs are mapped to [−1, 1]; outputs use z-score normalization per channel. The continuity residual $\mathcal{R}_{\rm cont} = \nabla \cdot \mathbf{u}$ is evaluated in physical space via automatic differentiation with proper scaling. Wall no-slip is enforced on steel-region boundary points (∼42k points). Training uses Adam (lr  = 10⁻³), batch size 8192, 2500 epochs, on an RTX 5070 GPU (8 GB, ∼5 min). Inference: ∼5 s for 9.3 × 10⁵ cells.
+
+Experimental Setup
+
+Training uses center-blowing Q = 40, 60, 80 NL/min; Q = 100, 120 NL/min are extrapolation tests; three eccentric cases (Q = 40, 80, 120 NL/min, m = 1) are cross-position tests. Six baselines: MLP 6 × 128, MLP 8 × 384, DeepONet (p = 50), Kriging GPR (2000 inducing pts), POD-ROM, KAN. Metrics: R² on velocity magnitude and per-field R². Eleven experiments were conducted (Table 5).
+
+   #   Experiment              Key finding
+  ---- ----------------------- -------------------------------------------------------------------------
+   1   λ sensitivity           $\lambda_{\rm bc}=0$, $\lambda_{\rm cont} \in [10^{-5},10^{-1}]$ robust
+   2   ν_(t) ablation          No effect (mixing/const/none identical)
+   3   Physics term ablation   Continuity: +0.014 R²
+   4   Baseline comparison     8×384(0.983) > 6×128(0.90) > DeepONet(−0.72)
+   5   Cross-position          m = 0 blind fails; joint recovers 0.94–0.97
+   6   Convergence             Smooth convergence, $\sigma_{\rm err} = 0.003$ m/s
+   7   Extrapolation           Near-zero degradation to Q = 120
+   8   VOF ablation            Filtered (0.86) vs hard (0.52)
+   9   l_(m) sensitivity       No effect (0.005–0.05)
+   10  Multi-seed              0.978±0.001 (8×384), 0.889±0.002 (6×128)
+   11  Slag eye                $\alpha_{\rm slag} < 0.5$: 60.2% exposed at Q = 120
+
+  : Experiment matrix.
+
+Results
+
+Loss Weight and Physics Ablation
+
+A $\lambda_{\rm cont} \times \lambda_{\rm bc}$ sweep (6 × 128) found $\lambda_{\rm bc} = 0$ optimal; continuity weighting is robust over four orders of magnitude (Fig. 3). Three ν_(t) treatments (mixing-length, constant, none) yield identical R² (0.825). Continuity alone provides the only measurable gain: +0.014 R² (Table 6). The momentum residual—incomplete without DPM buoyancy—does not enhance performance.
+
+[]
+
+  Configuration        $R^{2}_{\rm int}$   $R^{2}_{\rm ext}$
+  ------------------- ------------------- -------------------
+  Pure data                  0.859               0.849
+  + Continuity               0.873               0.852
+  + BC + Continuity          0.854               0.838
+
+  : Physics term ablation (6 × 128, 1200 epochs).
+
+Baseline Comparison
+
+Physics term ablation (Fig. 4a) and baseline comparison (Fig. 4b) are shown together. Continuity alone provides the only measurable gain (+0.014 R²); the momentum residual and boundary-condition terms do not enhance performance. The six-baseline comparison shows MLP 8 × 384 (1.04M params) at R² = 0.983. DeepONet fails (R² = −0.72)—branch–trunk factorization poorly captures the global plume structure. Kriging diverges on the 9.3 × 10⁵-cell 4D input space. POD-ROM requires structured-grid interpolation; KAN encountered toolchain barriers on Windows.
+
+[]
+
+Cross-Position Generalization
+
+A center-only model (m = 0) collapses on eccentric data (R² = −1.12 to −0.70). Joint training with m ∈ {0, 1} recovers R² = 0.94–0.97 for eccentric cases while maintaining R² = 0.974 for center-blowing (Fig. 5). Multi-seed stability: 0.972 ± 0.003 (center), 0.945 ± 0.007 (eccentric). For eccentric Q = 120 NL/min, the plume peak shifts downward (z ≈ 0.70 m vs. ∼1.80 m for Q = 40, 80) due to slag eye venting—confirmed by two independent CFD runs.
+
+[]
+
+[]
+
+Pointwise Accuracy and Convergence
+
+Centerline velocity profiles (Fig. 6) show close agreement between CFD and PINN across all eight configurations. The 8 × 384 model achieves $R^{2}_{\rm int}=0.980$, $R^{2}_{\rm ext}=0.986$. All five Q values exceed R² = 0.975 (Fig. 7). Error distribution: σ = 0.003 m/s, with errors concentrated in the high-gradient plume core. Convergence is smooth, reaching R² > 0.90 by epoch 1000 (Fig. 8).
+
+[]
+
+[]
+
+VOF Strategy and Three-Dimensional Visualization
+
+VOF-filtered training ($\alpha_{\rm steel}>0.01$) achieves R² = 0.859, versus 0.515 for hard thresholding (Fig. 9). Full unfiltered training fails (R² < 0.1). Three-dimensional plume visualization (Figs. 10, 11) reveals the plume structure and the offset position of the eccentric plume at x ≈ 0.47 m.
+
+[]
+
+[]
+
+[]
+
+[]
+
+Discussion
+
+Pointwise prediction errors are concentrated in the high-gradient plume core (Fig. 12), with the histogram showing comparable error distributions for center and eccentric Q = 120. The VOF-based domain decomposition succeeds because in pure-steel cells, the mixture equations reduce to single-phase RANS exactly. Momentum residuals do not help because DPM bubble buoyancy—the actual plume driver—is absent from the homogeneous RANS formulation. The m parameterization proves both necessary (center-only model fails on eccentric data) and effective (joint model recovers). For the 8 × 384 model, continuity adds negligible gain (R² = 0.980 vs. 0.980 pure data), suggesting that at sufficient capacity, physics regularization becomes unnecessary. The VOF-based domain decomposition succeeds because in pure-steel cells, the mixture equations reduce to single-phase RANS exactly. Momentum residuals do not help because DPM bubble buoyancy—the actual plume driver—is absent from the homogeneous RANS formulation. The m parameterization proves both necessary (center-only model fails on eccentric data) and effective (joint model recovers). For the 8 × 384 model, continuity adds negligible gain (R² = 0.980 vs. 0.980 pure data), suggesting that at sufficient capacity, physics regularization becomes unnecessary.
+
+Limitations: (1) steady-state only—transient slag eye dynamics require time-resolved training, (2) no explicit bubble physics, (3) single ladle geometry, (4) three training operating points. Future work: transient slag eye, inclusion removal prediction, multi-ladle generalization.
+
+Conclusion
+
+An 8 × 384 SiLU MLP with VOF-informed domain decomposition achieves R² = 0.983 for center-blowing with near-zero extrapolation degradation. Joint m ∈ {0, 1} training recovers R² = 0.94–0.97 for eccentric-blowing. VOF filtering is the dominant design factor (+0.344 over hard thresholding). Six baselines were compared; DeepONet, Kriging, POD-ROM, and KAN encountered scalability or implementation barriers. The surrogate predicts the full field in ∼5 seconds. Future work addresses transient slag eye dynamics and inclusion removal prediction.
+
+Acknowledgments
+
+Supported by National Key R&D Program of China (2023YFB3712401).
+
+99
+
+Mazumdar D., Guthrie R.I.L. The physical and mathematical modelling of gas stirred ladle systems. ISIJ International, 1995, 35(1): 1–20.
+
+Jonsson L., Jönsson P. Modeling of fluid flow conditions around the slag/metal interface in a gas-stirred ladle. ISIJ International, 1996, 36(9): 1127–1134.
+
+Li L., Li X., Zhu Z., et al. Numerical modeling of multiphase flow in gas-stirred ladles: A review. Powder Technology, 2020, 373: 14–25.
+
+Xin Z., Zhang J., Peng K., et al. Modeling of LF refining process: A review. Journal of Iron and Steel Research International, 2024, 31: 289–317.
+
+Liu Y., Ersson M., Liu H., et al. A review of physical and numerical approaches for the study of gas stirring in ladle metallurgy. Metall. Mater. Trans. B, 2019, 50: 555–577.
+
+Ersson M., Tilliander A., Jonsson L., et al. A mathematical model of an impinging air jet on a water surface. ISIJ International, 2008, 48(4): 377–384.
+
+Brunton S.L., Noack B.R., Koumoutsakos P. Machine learning for fluid mechanics. Annu. Rev. Fluid Mech., 2020, 52: 477–508.
+
+Raissi M., Perdikaris P., Karniadakis G.E. Physics-informed neural networks. J. Comput. Phys., 2019, 378: 686–707.
+
+Karniadakis G.E., Kevrekidis I.G., Lu L., et al. Physics-informed machine learning. Nature Rev. Phys., 2021, 3: 422–440.
+
+Cai S., Mao Z., Wang Z., et al. Physics-informed neural networks for fluid mechanics: A review. Acta Mech. Sinica, 2021, 37: 1727–1738.
+
+Cuomo S., Di Cola V.S., Giampaolo F., et al. Scientific machine learning through PINNs. J. Sci. Comput., 2022, 92(3): 88.
+
+Wang S., Teng Y., Perdikaris P. Understanding gradient flow pathologies in PINNs. SIAM J. Sci. Comput., 2021, 43(5): A3055–A3081.
+
+Jin X., Cai S., Li H., et al. NSFnets. J. Comput. Phys., 2021, 426: 109951.
+
+Shih T.H., et al. A new k–ε eddy viscosity model. Comput. Fluids, 1995, 24(3): 227–238.
+
+Cloete S.W.P., et al. Fluid flow and mixing in full-scale gas-stirred ladles. Prog. Comput. Fluid Dyn., 2009, 9(6–7): 345–356.
+
+Lu L., Jin P., Pang G., et al. Learning nonlinear operators via DeepONet. Nature Mach. Intell., 2021, 3: 218–229.

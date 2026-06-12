@@ -1,0 +1,27 @@
+# CFD data files (too large for GitHub)
+data/
+
+# Fluent project files
+Fluent_data/
+
+# Model checkpoints (large binary)
+models/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# LaTeX aux files
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.toc
+
+# Archives
+_archive/
+src/_archive/
+src/results/
+
+# OS files
+.DS_Store
+Thumbs.db
