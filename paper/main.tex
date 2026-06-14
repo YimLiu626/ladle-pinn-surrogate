@@ -20,7 +20,7 @@
 \address[shu]{School of Materials Science and Engineering \& State Key Laboratory of Advanced Special Steel, Shanghai University, Shanghai 200444, PR China}
 
 \begin{abstract}
-Repeated CFD simulations of argon-stirred ladle flow are computationally prohibitive when multiple operating conditions must be evaluated. This study develops a VOF-guided neural surrogate combining volume-of-fluid (VOF)-based domain decomposition with multilayer perceptron regression for rapid prediction of the statistically steady liquid-steel flow field under varying gas flow rates ($Q$) and injection positions ($m$). VOF filtering restricts training to the steel-containing computational subdomain ($\alpha_{\rm steel}>0.01$), where the bulk flow is dominated by the steel phase. An $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied $Q$ range. A binary injection-position parameter $m\in\{0,1\}$ enables a position-conditioned surrogate: a joint model trained on both center and eccentric data recovers $R^{2}=0.94$--$0.97$ for eccentric blowing while maintaining center-blowing accuracy. Proper orthogonal decomposition (POD-ROM) achieves the best center-blowing accuracy ($R^{2}=0.994$) but does not transfer across injection positions in its present center-trained form, illustrating the challenge of modeling configuration-dependent flow topology with a single reduced basis. The proposed surrogate predicts the full three-dimensional field in $\sim$5 seconds per operating condition, enabling rapid flow-field evaluation for engineering applications.
+Repeated CFD simulations of argon-stirred ladle flow are computationally prohibitive when multiple operating conditions must be evaluated. This study develops a VOF-guided neural surrogate combining volume-of-fluid (VOF)-based domain decomposition with multilayer perceptron regression for rapid prediction of the statistically steady liquid-steel flow field under varying gas flow rates ($Q$) and injection positions ($m$). VOF filtering restricts training to the steel-containing computational subdomain ($\alpha_{\rm steel}>0.01$), where the bulk flow is dominated by the steel phase. An $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied $Q$ range. A binary injection-position parameter $m\in\{0,1\}$ enables a position-conditioned surrogate: a joint model trained on both center and eccentric data achieves $R^{2}=0.969$ on the held-out eccentric $Q=120$ NL/min case, while retaining high accuracy on the eccentric training cases ($Q=40,80$ NL/min). Proper orthogonal decomposition (POD-ROM) achieves the best center-blowing accuracy ($R^{2}=0.994$) but does not transfer across injection positions in its present center-trained form, illustrating the challenge of modeling configuration-dependent flow topology with a single reduced basis. The proposed surrogate predicts the full three-dimensional field in $\sim$5 seconds per operating condition, enabling rapid flow-field evaluation for engineering applications.
 \end{abstract}
 
 \begin{keyword}
@@ -128,7 +128,7 @@ with $z_{\rm top}=1.85$ m, $T=0.20$ m. However, as shown in Section~\ref{sec:res
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{figures/fig2_vof_stratification.pdf}
-\caption{Three-phase stratification. (a) Steel, slag, and argon profiles---identical across $Q$. (b) Interface detail.}
+\caption{Three-phase stratification. (a) Steel, slag, and top-gas profiles---identical across $Q$. (b) Interface detail.}
 \label{fig:vof}
 \end{figure}
 
@@ -186,9 +186,7 @@ Baseline comparison (Fig.~\ref{fig:abl_base}b): POD-ROM achieves the highest cen
 \label{sec:results_cross}
 Cross-position results are shown in Fig.~\ref{fig:cross} and Table~\ref{tab:cross}. A center-only model ($m=0$) collapses on eccentric data ($R^{2}<-0.7$), confirming that injection position fundamentally alters the flow topology. Joint training with $m\in\{0,1\}$ recovers $R^{2}=0.94$--$0.97$ for eccentric cases while maintaining $R^{2}=0.974$ for center-blowing.
 
-Crucially, the center-trained POD model fails on eccentric data ($R^{2}=-0.77$ to $-1.40$). Its spatial modes capture a center-symmetric plume structure that does not represent the off-center flow topology. Although parametric, local, or clustered POD approaches may handle multiple configurations with additional snapshots and mode-management strategies, the standard POD-ROM used here does not transfer across injection positions without retraining. In contrast, the proposed MLP provides a simple single-network alternative via the $m$ parameterization.
-
-In contrast, the proposed surrogate with $m$ parameterization replaces two separate POD models with a single network. The three-dimensional error comparison (Fig.~\ref{fig:pod}) visualizes this contrast at $Q=120$ NL/min.
+Crucially, the center-trained POD model fails on eccentric data ($R^{2}=-0.77$ to $-1.40$). Its spatial modes capture a center-symmetric plume structure that does not represent the off-center flow topology. Although parametric, local, or clustered POD approaches may handle multiple configurations with additional snapshots and mode-management strategies, the standard POD-ROM used here does not transfer across injection positions without retraining. In contrast, the proposed surrogate with $m$ parameterization provides a single-network alternative, replacing two separate POD models. The three-dimensional error comparison (Fig.~\ref{fig:pod}) visualizes this contrast at $Q=120$ NL/min.
 
 \begin{figure}[H]
 \centering
