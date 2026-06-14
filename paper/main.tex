@@ -1,31 +1,30 @@
-\documentclass{elsarticle}
+\documentclass[12pt,a4paper]{article}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{hyperref}
-\usepackage{float}
-\usepackage[numbers]{natbib}
+\usepackage{authblk}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[margin=2.5cm]{geometry}
 
 \begin{document}
 
-\title{A VOF-Guided Neural Surrogate for Position-Conditioned Flow Prediction in Argon-Stirred Ladle Refining}
+\title{\bfseries A VOF-Guided Neural Surrogate for Position-Conditioned Flow Prediction in Argon-Stirred Ladle Refining}
 
-\author[shu]{Yiming Liu}
-\author[shu]{Wentao Zhang}
-\author[shu]{Xutong Wang}
-\author[shu]{Guangxin Wu\corref{corresponding}}
-\cortext[corresponding]{Corresponding author. E-mail: gxwu@shu.edu.cn}
-\address[shu]{School of Materials Science and Engineering \& State Key Laboratory of Advanced Special Steel, Shanghai University, Shanghai 200444, PR China}
+\author[1]{Yiming Liu}
+\author[1]{Wentao Zhang}
+\author[1]{Xutong Wang}
+\author[1]{Guangxin Wu\thanks{Corresponding author. E-mail: gxwu@shu.edu.cn}}
+\affil[1]{School of Materials Science and Engineering, State Key Laboratory of Advanced Special Steel, Shanghai University, Shanghai 200444, PR China}
 
 \begin{abstract}
 Repeated CFD simulations of argon-stirred ladle flow are computationally prohibitive when multiple operating conditions must be evaluated. This study develops a VOF-guided neural surrogate combining volume-of-fluid (VOF)-based domain decomposition with multilayer perceptron regression for rapid prediction of the statistically steady liquid-steel flow field under varying gas flow rates ($Q$) and injection positions ($m$). VOF filtering restricts training to the steel-containing computational subdomain ($\alpha_{\rm steel}>0.01$), where the bulk flow is dominated by the steel phase. An $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied $Q$ range. A binary injection-position parameter $m\in\{0,1\}$ enables a position-conditioned surrogate: a joint model trained on both center and eccentric data achieves $R^{2}=0.969$ on the held-out eccentric $Q=120$ NL/min case, while retaining high accuracy on the eccentric training cases ($Q=40,80$ NL/min). Proper orthogonal decomposition (POD-ROM) achieves the best center-blowing accuracy ($R^{2}=0.994$) but does not transfer across injection positions in its present center-trained form, illustrating the challenge of modeling configuration-dependent flow topology with a single reduced basis. The proposed surrogate predicts the full three-dimensional field in $\sim$5 seconds per operating condition, enabling rapid flow-field evaluation for engineering applications.
 \end{abstract}
 
-\begin{keyword}
-VOF-filtered neural surrogate; Ladle furnace; Position-conditioned prediction; POD-ROM; CFD-informed machine learning; Engineering application
-\end{keyword}
+\bigskip
+\noindent\textbf{Keywords:} VOF-filtered neural surrogate; Ladle furnace; Position-conditioned prediction; POD-ROM; CFD-informed machine learning.
 
 \maketitle
 
@@ -142,7 +141,7 @@ Three evaluation protocols with distinct train/test splits were defined (Table~\
 \centering
 \caption{Training and evaluation protocols.}
 \label{tab:split}
-\begin{tabular}{lp{4.5cm}p{4.5cm}}
+\begin{tabular}{lp{3.5cm}p{3.5cm}}
 \toprule Protocol & Training set & Test set \\ \midrule
 Center-only & Center $Q=40,60,80$ & Center $Q=100,120$ \\
 Position-conditioned & Center $Q=40,60,80$ + Ecc.\ $Q=40,80$ & Center $Q=100,120$ + Ecc.\ $Q=120$ \\
@@ -301,7 +300,7 @@ Supported by National Key R\&D Program of China (2023YFB3712401).
 \section*{Data Availability}
 The CFD-DPM simulation code used to generate the reference dataset is available at \texttt{https://github.com/YimLiu626/-ladle-cfd-bucket-screening} \cite{liu2026cfd}. All surrogate modeling code, trained model weights, result JSON files, and paper figures are available at \texttt{https://github.com/YimLiu626/ladle-pinn-surrogate}. A sample of the 12-column CFD export format (100 rows) is included in the surrogate repository.
 
-\bibliographystyle{elsarticle-num}
+\bibliographystyle{unsrtnat}
 \begin{thebibliography}{99}
 
 \bibitem{liu2026cfd} Liu Y., Wu G. A cell-localized bucket search method for conservative bubble-inclusion contact screening in industrial CFD-DPM simulations. \textit{Advances in Manufacturing}, 2026 (under review).
