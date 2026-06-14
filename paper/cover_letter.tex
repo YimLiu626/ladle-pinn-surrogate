@@ -1,0 +1,35 @@
+\documentclass{article}
+\begin{document}
+
+\date{}
+
+\noindent Dear Editor,
+
+\vspace{1em}
+
+We submit the enclosed manuscript entitled ``A VOF-Guided Neural Surrogate for Position-Conditioned Flow Prediction in Argon-Stirred Ladle Refining'' for consideration in \textit{Engineering Applications of Computational Fluid Mechanics}.
+
+This manuscript is a substantially revised and restructured version of a previous submission that was returned after editorial screening. The current version has been reformulated around four pillars that were absent or underdeveloped in the original:
+
+\begin{enumerate}
+  \item \textbf{VOF-guided domain restriction.} The original manuscript attempted full-domain PINN training without accounting for the multiphase density range. The current version explicitly restricts the learning problem to a VOF-filtered steel-containing computational subdomain ($\alpha_{\rm steel}>0.01$), where the bulk flow approaches single-phase behavior. This avoids ill-conditioned multiphase residuals and improves $R^{2}$ by $+0.344$ over unfiltered training.
+
+  \item \textbf{Position-conditioned prediction with explicit train/test protocols.} A binary injection-position parameter $m\in\{0,1\}$ enables a single surrogate to serve both center-bottom and eccentric-bottom blowing. We define three evaluation protocols (center-only, position-conditioned, unseen-position) with fully specified training and test sets, removing the data-leakage ambiguity present in the original submission.
+
+  \item \textbf{POD-ROM benchmarking.} Six baselines are compared, with proper orthogonal decomposition achieving the best center-blowing accuracy ($R^{2}=0.994$) but failing to transfer across injection positions ($R^{2}<0$). This demonstrates that POD spatial modes are configuration-specific, while the proposed surrogate provides a single-network alternative via the $m$ parameterization.
+
+  \item \textbf{Open-source release.} All code, trained model weights, result files, and paper figures are publicly available. A sample of the CFD export format is provided for reproducibility.
+\end{enumerate}
+
+The revised manuscript contains 11 figures, 7 tables, and 30 references across 17 pages. All data splits, evaluation metrics (including per-component $R^{2}$ and RMSE), and baseline comparisons are explicitly documented. We have also addressed the original editorial feedback regarding methodological clarity and baseline rigor.
+
+We believe this work represents a meaningful contribution to CFD-informed surrogate modeling for industrial ladle metallurgy, demonstrating that VOF-guided domain decomposition combined with position-conditioned neural networks can replace multiple configuration-specific reduced-order models with a single fast surrogate.
+
+\vspace{1em}
+\noindent We confirm that this manuscript has not been published elsewhere and is not under consideration by another journal. All authors have approved the manuscript and agree with its submission to \textit{Engineering Applications of Computational Fluid Mechanics}.
+
+\vspace{1em}
+\noindent Sincerely,\\
+The Authors
+
+\end{document}

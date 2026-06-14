@@ -1,0 +1,33 @@
+EACFM 重投策略
+
+1. 提交方式：作为 NEW submission 投，不是 revision
+   - EACFM 投稿系统选 "New Submission"
+   - Cover letter 里写清楚是 previously submitted but substantially revised
+
+2. 文件清单
+   - main_final.pdf（正式版）
+   - main_anon.pdf（匿名版，盲审用）
+   - cover_letter.pdf
+   - 图文件（paper/figures/ 下所有 .pdf）
+
+3. 推荐审稿人（3-5位）
+   找 CFD surrogate / ladle flow / PINN 方向的学者：
+   - 钢包流体力学：Mazumdar, Jonsson, Ersson, Conejo
+   - CFD surrogate：Zhu Y., Sun L., Brunton
+   - POD-ROM：Benner, Willcox
+   不要推荐可能会有竞争关系的课题组
+
+4. 投稿类型选 "Research Article"
+
+5. 亮点 (Highlights, 3-5 条, 每条 85 字符以内)
+   - VOF-filtered neural surrogate achieves R2=0.983 for ladle flow
+   - Position-conditioned prediction replaces two POD models with one network
+   - POD-ROM excels on single-configuration but fails across positions
+   - Open-source release of code, models, and benchmark data
+   - 5-second inference replaces 36-hour CFD per operating condition
+
+6. 审稿回复策略
+   如果之前的外审意见里有具体问题，在 cover letter 里逐条说明已修改，但不引用原文。
+
+7. 时间建议
+   马上投。EACFM 审稿周期 2-4 个月。
