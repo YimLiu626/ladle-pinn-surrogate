@@ -155,7 +155,7 @@ Unseen-position & Center $Q=40,60,80$ & All eccentric $Q=40,80,120$ \\
 POD-ROM was implemented as a comparative baseline. Velocity magnitude snapshots from three training cases ($Q=40,60,80$ NL/min) form a snapshot matrix $\mathbf{X}\in\mathbb{R}^{3\times N}$ where $N=932{,}079$. SVD of the centered matrix yields two spatial modes capturing 100\% of snapshot variance. Mode coefficients are interpolated to test $Q$ values via thin-plate-spline RBF. Due to the smooth $Q$-dependence of the flow field, this approach achieves near-perfect reconstruction. However, because POD modes are tied to the spatial structure of a specific injection configuration, the model cannot generalize across positions---a limitation demonstrated in Section~\ref{sec:results_cross}.
 
 \section{Experimental Setup}
-Training: center-blowing $Q=40,60,80$ NL/min. Extrapolation testing: center-blowing $Q=100,120$ NL/min. Cross-position testing: eccentric-blowing $Q=40,80,120$ NL/min ($m=1$). Six baselines: POD-ROM, MLP $8\times384$, MLP $6\times128$, DeepONet ($p=50$), Kriging GPR (2000 inducing points), KAN. Metrics: $R^{2}$ on velocity magnitude, per-field $R^{2}$, multi-seed ensemble stability.
+Training: center-blowing $Q=40,60,80$ NL/min. Extrapolation testing: center-blowing $Q=100,120$ NL/min. Cross-position testing: eccentric-blowing $Q=40,80,120$ NL/min ($m=1$). Several representative baselines were evaluated: POD-ROM, MLP $8\times384$, MLP $6\times128$, and DeepONet ($p=50$). Kriging GPR and KAN were also attempted but encountered scalability and implementation barriers respectively; these are discussed in Section 6. Metrics: $R^{2}$ on velocity magnitude, per-field $R^{2}$, multi-seed ensemble stability.
 
 \section{Results}
 
@@ -173,7 +173,7 @@ Three-phase stratification is identical across all five $Q$ values (Fig.~\ref{fi
 \label{sec:results_physics}
 Physics term ablation (Fig.~\ref{fig:abl_base}a) shows that the continuity constraint provides a modest $+0.014$ $R^{2}$ improvement with the $6\times128$ model. BC constraints and momentum residuals do not enhance performance; the no-slip condition is implicitly learned from CFD data, and the momentum residual is incomplete without the DPM buoyancy source term. For the $8\times384$ model, continuity adds no measurable gain ($R^{2}=0.980$ vs.\ $0.980$ pure data), indicating that at sufficient model capacity, physics regularization becomes unnecessary.
 
-Baseline comparison (Fig.~\ref{fig:abl_base}b): POD-ROM achieves the highest center-blowing accuracy ($R^{2}=0.994$) with two modes. This is expected---with three training snapshots, two modes capture all variance, and RBF interpolation of smoothly varying coefficients yields near-perfect prediction. MLP $8\times384$ follows at $R^{2}=0.983$. DeepONet fails ($R^{2}=-0.72$) because branch--trunk factorization poorly captures the global plume structure. Kriging GPR with 2000 inducing points diverges on the $9.3\times10^{5}$-cell 4D input space. KAN encountered Windows toolchain barriers.
+Baseline comparison (Fig.~\ref{fig:abl_base}b): POD-ROM achieves the highest center-blowing accuracy ($R^{2}=0.994$) with two modes. This is expected---with three training snapshots, two modes capture all variance, and RBF interpolation of smoothly varying coefficients yields near-perfect prediction. MLP $8\times384$ follows at $R^{2}=0.983$. DeepONet performs poorly ($R^{2}=-0.72$), indicating that branch--trunk factorization does not effectively capture the global plume structure in this problem class. Additional baselines (Kriging GPR, KAN) were attempted but encountered scalability and implementation barriers; these limitations are acknowledged in Section 6.
 
 \begin{figure}[H]
 \centering
@@ -218,7 +218,22 @@ POD center-only & 0.994 & $-0.77$ & $-0.82$ & $-1.40$ \\
 \end{figure}
 
 \subsection{Pointwise Accuracy and Error Distribution}
-Pointwise scatter (Fig.~\ref{fig:scatter}) confirms strong agreement across all conditions. Three-dimensional error visualization (Fig.~\ref{fig:3derror}) shows errors concentrated in the high-gradient plume core. Per-condition performance, multi-seed stability, and VOF sensitivity are summarized in Fig.~\ref{fig:perf}. Training converges smoothly (Fig.~\ref{fig:conv}).
+Pointwise scatter (Fig.~\ref{fig:scatter}) confirms strong agreement across all conditions. Per-component and per-condition performance of the $8\times384$ center-only model is reported in Table~\ref{tab:comp}. All three velocity components achieve $R^{2}>0.93$ across the full $Q$ range; the vertical component $w$, which dominates plume-driven flow, reaches $R^{2}>0.98$. Three-dimensional error visualization (Fig.~\ref{fig:3derror}) shows errors concentrated in the high-gradient plume core. Per-condition performance, multi-seed stability, and VOF sensitivity are summarized in Fig.~\ref{fig:perf}. Training converges smoothly (Fig.~\ref{fig:conv}).
+
+\begin{table}[h]
+\centering
+\caption{Per-component validation of the $8\times384$ center-only model.}
+\label{tab:comp}
+\begin{tabular}{lccccc}
+\toprule & Q40 & Q60 & Q80 & Q100 & Q120 \\ \midrule
+$R^{2}(|\mathbf{U}|)$ & 0.975 & 0.983 & 0.987 & 0.988 & 0.984 \\
+$R^{2}(u)$ & 0.934 & 0.944 & 0.944 & 0.944 & 0.944 \\
+$R^{2}(v)$ & 0.961 & 0.967 & 0.970 & 0.970 & 0.970 \\
+$R^{2}(w)$ & 0.984 & 0.989 & 0.991 & 0.991 & 0.989 \\
+RMSE($|\mathbf{U}|$, m/s) & 0.008 & 0.007 & 0.006 & 0.006 & 0.007 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[H]
 \centering
@@ -274,10 +289,10 @@ POD modes represent the spatial structure of a specific flow configuration. Cent
 The continuity constraint provides a consistent but small gain ($+0.014$ $R^{2}$) for the $6\times128$ model, where limited capacity benefits from additional guidance. For the $8\times384$ model, pure data supervision is sufficient. The momentum residual does not help regardless of model size because the DPM bubble buoyancy---the actual plume driver---is absent from the homogeneous RANS formulation. BC constraints are unnecessary because the no-slip condition is implicitly encoded in the CFD data. These findings suggest that for CFD-informed surrogate problems where training data are dense and noise-free, physics regularization offers diminishing returns as model capacity increases.
 
 \subsection{Limitations}
-(1) Steady-state only---transient slag eye dynamics require time-resolved training. (2) No explicit bubble physics in the surrogate---DPM momentum is encoded in CFD data, not in the model. (3) Single ladle geometry. (4) Three training $Q$ values---the zero extrapolation degradation suggests this is sufficient for the studied range, but outer bounds remain untested. (5) Kriging, POD (cross-position), and KAN encountered implementation barriers that limit the completeness of the baseline comparison. Future work will extend this framework in three directions: (1) time-resolved CFD training data to capture transient slag eye opening and closing dynamics, (2) structural feature extraction from plume-induced flow patterns (e.g., recirculation zone topology, interface deformation metrics) as inputs to downstream prediction models, and (3) a coupled inclusion transport and removal-rate prediction model built on the surrogate flow field---combining the high-throughput CFD-DPM data-generation framework of the companion study \cite{liu2026cfd} with the rapid surrogate inference demonstrated here.
+(1) Steady-state only---transient slag eye dynamics require time-resolved training. (2) No explicit bubble physics in the surrogate---DPM momentum is encoded in CFD data, not in the model. (3) Single ladle geometry. (4) Three training $Q$ values---the zero extrapolation degradation suggests this is sufficient for the studied range, but outer bounds remain untested. (5) Kriging GPR (2000 inducing points) diverged on the $9.3\times10^{5}$-cell four-dimensional input space due to memory constraints; KAN encountered toolchain barriers on the Windows platform. These methods were not evaluated as formal baselines, representing a gap in the comparison. Future work will extend this framework in three directions: (1) time-resolved CFD training data to capture transient slag eye opening and closing dynamics, (2) structural feature extraction from plume-induced flow patterns (e.g., recirculation zone topology, interface deformation metrics) as inputs to downstream prediction models, and (3) a coupled inclusion transport and removal-rate prediction model built on the surrogate flow field---combining the high-throughput CFD-DPM data-generation framework of the companion study \cite{liu2026cfd} with the rapid surrogate inference demonstrated here.
 
 \FloatBarrier\section{Conclusion}
-A CFD-informed surrogate using VOF-based domain decomposition and an $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with near-zero extrapolation degradation. Joint $m\in\{0,1\}$ training recovers $R^{2}=0.94$--$0.97$ for eccentric-blowing. Six baselines were compared. POD-ROM achieves the best center-blowing accuracy ($R^{2}=0.994$) but collapses across injection positions because spatial modes do not transfer between configurations---each position requires an independent POD model. The proposed surrogate with $m$ parameterization replaces two POD models with one network, predicting the full field in $\sim$5 seconds.
+A CFD-informed surrogate using VOF-based domain decomposition and an $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied operating range. Joint $m\in\{0,1\}$ training recovers $R^{2}=0.94$--$0.97$ for eccentric-blowing. Six baselines were compared. POD-ROM achieves the best center-blowing accuracy ($R^{2}=0.994$) but collapses across injection positions because spatial modes do not transfer between configurations---each position requires an independent POD model. The proposed surrogate with $m$ parameterization replaces two POD models with one network, predicting the full field in $\sim$5 seconds.
 
 \section*{Acknowledgments}
 Supported by National Key R\&D Program of China (2023YFB3712401).
