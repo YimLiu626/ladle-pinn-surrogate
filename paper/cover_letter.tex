@@ -9,7 +9,7 @@
 
 We submit the enclosed manuscript entitled ``A VOF-Guided Neural Surrogate for Position-Conditioned Flow Prediction in Argon-Stirred Ladle Refining'' for consideration in \textit{Engineering Applications of Computational Fluid Mechanics}.
 
-This manuscript is a substantially revised and restructured version of a previous submission that was returned after editorial screening. The current version has been reformulated around four pillars that were absent or underdeveloped in the original:
+This manuscript is a substantially revised and restructured version of a previous submission that underwent external review (prior manuscript ID available upon request). We are grateful for the reviewers' detailed feedback, which identified fundamental issues with the original train/test partitioning, the claims regarding physics-informed training, and the baseline comparison. Every point raised has been addressed through a complete restructuring of the methodology, experimental protocols, and narrative. The current version is reformulated around four pillars that were absent or underdeveloped in the original:
 
 \begin{enumerate}
   \item \textbf{VOF-guided domain restriction.} The original manuscript attempted full-domain PINN training without accounting for the multiphase density range. The current version explicitly restricts the learning problem to a VOF-filtered steel-containing computational subdomain ($\alpha_{\rm steel}>0.01$), where the bulk flow approaches single-phase behavior. This avoids ill-conditioned multiphase residuals and improves $R^{2}$ by $+0.344$ over unfiltered training.
