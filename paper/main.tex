@@ -10,7 +10,7 @@
 
 \begin{document}
 
-\title{A VOF-Guided Neural Surrogate for Position-Conditioned Flow Prediction and Operating-Parameter Evaluation in Argon-Stirred Ladle Refining}
+\title{A VOF-Guided Neural Surrogate for Position-Conditioned Flow Prediction in Argon-Stirred Ladle Refining}
 
 \author[shu]{Yiming Liu}
 \author[shu]{Wentao Zhang}
@@ -116,7 +116,7 @@ with $z_{\rm top}=1.85$ m, $T=0.20$ m. However, as shown in Section~\ref{sec:res
 \caption{Verified phase stratification (mean VOF).}
 \label{tab:vof_strat}
 \begin{tabular}{lccc}
-\toprule $z$ (m) & $\bar{\alpha}_{\rm steel}$ & $\bar{\alpha}_{\rm slag}$ & $\bar{\alpha}_{\rm argon}$ \\ \midrule
+\toprule $z$ (m) & $\bar{\alpha}_{\rm steel}$ & $\bar{\alpha}_{\rm slag}$ & $\bar{\alpha}_{\rm gas}$ \\ \midrule
 0--1.6   & 1.000 & 0.000 & 0.000 \\
 1.6--1.85 & 0.731 & 0.269 & 0.000 \\
 1.85--2.05 & 0.000 & 0.701 & 0.299 \\
@@ -155,7 +155,7 @@ Unseen-position & Center $Q=40,60,80$ & All eccentric $Q=40,80,120$ \\
 POD-ROM was implemented as a comparative baseline. Velocity magnitude snapshots from three training cases ($Q=40,60,80$ NL/min) form a snapshot matrix $\mathbf{X}\in\mathbb{R}^{3\times N}$ where $N=932{,}079$. SVD of the centered matrix yields two spatial modes capturing 100\% of snapshot variance. Mode coefficients are interpolated to test $Q$ values via thin-plate-spline RBF. Due to the smooth $Q$-dependence of the flow field, this approach achieves near-perfect reconstruction. However, because POD modes are tied to the spatial structure of a specific injection configuration, the model cannot generalize across positions---a limitation demonstrated in Section~\ref{sec:results_cross}.
 
 \section{Experimental Setup}
-Training: center-blowing $Q=40,60,80$ NL/min. Extrapolation testing: center-blowing $Q=100,120$ NL/min. Cross-position testing: eccentric-blowing $Q=40,80,120$ NL/min ($m=1$). Several representative baselines were evaluated: POD-ROM, MLP $8\times384$, MLP $6\times128$, and DeepONet ($p=50$). Kriging GPR and KAN were also attempted but encountered scalability and implementation barriers respectively; these are discussed in Section 6. Metrics: $R^{2}$ on velocity magnitude, per-field $R^{2}$, multi-seed ensemble stability.
+Evaluation followed the three protocols defined in Table~\ref{tab:split}. For the center-only protocol, $Q=40,60,80$ NL/min were used for training and $Q=100,120$ NL/min for testing. For the position-conditioned protocol, center $Q=40,60,80$ and eccentric $Q=40,80$ NL/min were used for training, while center $Q=100,120$ and eccentric $Q=120$ NL/min were held out. For the unseen-position test, a center-only model was evaluated directly on all eccentric cases. Several representative baselines were evaluated: POD-ROM, MLP $8\times384$, MLP $6\times128$, and DeepONet ($p=50$). Kriging GPR and KAN were attempted but encountered scalability and implementation barriers; these are discussed in Section 6. Metrics: $R^{2}$ on velocity magnitude, per-field $R^{2}$, multi-seed ensemble stability.
 
 \section{Results}
 
@@ -186,7 +186,7 @@ Baseline comparison (Fig.~\ref{fig:abl_base}b): POD-ROM achieves the highest cen
 \label{sec:results_cross}
 Cross-position results are shown in Fig.~\ref{fig:cross} and Table~\ref{tab:cross}. A center-only model ($m=0$) collapses on eccentric data ($R^{2}<-0.7$), confirming that injection position fundamentally alters the flow topology. Joint training with $m\in\{0,1\}$ recovers $R^{2}=0.94$--$0.97$ for eccentric cases while maintaining $R^{2}=0.974$ for center-blowing.
 
-Crucially, the center-trained POD model fails catastrophically on eccentric data ($R^{2}=-0.77$ to $-1.40$). This is because POD spatial modes represent the specific spatial structure of the training configuration. Unlike the MLP, POD cannot incorporate a categorical input variable ($m$) to condition its predictions on injection position. Even a ``joint'' POD combining center and eccentric snapshots would produce modes that mix two fundamentally different flow topologies rather than learning to switch between them. Each nozzle configuration therefore requires an independent POD model.
+Crucially, the center-trained POD model fails on eccentric data ($R^{2}=-0.77$ to $-1.40$). Its spatial modes capture a center-symmetric plume structure that does not represent the off-center flow topology. Although parametric, local, or clustered POD approaches may handle multiple configurations with additional snapshots and mode-management strategies, the standard POD-ROM used here does not transfer across injection positions without retraining. In contrast, the proposed MLP provides a simple single-network alternative via the $m$ parameterization.
 
 In contrast, the proposed surrogate with $m$ parameterization replaces two separate POD models with a single network. The three-dimensional error comparison (Fig.~\ref{fig:pod}) visualizes this contrast at $Q=120$ NL/min.
 
@@ -202,7 +202,7 @@ In contrast, the proposed surrogate with $m$ parameterization replaces two separ
 \caption{Cross-position generalization.}
 \label{tab:cross}
 \begin{tabular}{lcccc}
-\toprule Model & Center $R^{2}$ & Ecc.\ Q40 & Ecc.\ Q80 & Ecc.\ Q120 \\ \midrule
+\toprule Model & Center $R^{2}$ & Ecc.\ Q40 (train) & Ecc.\ Q80 (train) & Ecc.\ Q120 (test) \\ \midrule
 MLP center-only & 0.979 & $-1.12$ & $-0.97$ & $-0.70$ \\
 MLP joint & 0.974 & 0.940 & 0.955 & 0.969 \\
 POD center-only & 0.994 & $-0.77$ & $-0.82$ & $-1.40$ \\
@@ -277,13 +277,13 @@ Plume core visualization (Fig.~\ref{fig:3d}) reveals the flow structure. The ecc
 \section{Discussion}
 
 \subsection{Why VOF Filtering Works}
-Restricting the problem to the steel phase succeeds for a mathematical reason rather than an empirical one: in pure-steel cells the mixture equations reduce to single-phase RANS without approximation. The filter eliminates the interface region where multiphase momentum balance spans four orders of magnitude, avoiding the ill-conditioning that would plague a full-domain physics-constrained surrogate. The dominant effect comes from the filter itself ($+0.344$ $R^{2}$ over hard thresholding; full-domain training collapses).
+The benefit of VOF filtering is twofold. First, it removes gas- and slag-dominated cells where mixture properties vary sharply, avoiding the severe ill-conditioning that would affect a full-domain surrogate. Second, the majority of retained cells belong to the steel-dominated bulk region where the flow approaches single-phase behavior. The improvement is therefore not from a strictly pure-steel mask but from a physically motivated restriction of the learning domain. The dominant contribution comes from the filter itself ($+0.344$ $R^{2}$ over hard thresholding; full-domain training collapses).
 
 \subsection{Why POD Outperforms MLP on Center-Blowing}
 POD-ROM's center-blowing accuracy ($R^{2}=0.994$) is not an indictment of the MLP but a reflection of problem structure. With three training snapshots, two SVD modes capture all snapshot variance, and thin-plate-spline RBF interpolation of two smoothly varying coefficients yields near-perfect prediction. The MLP ($R^{2}=0.983$) learns a general 5D$\to$4D mapping from a three-point sampling of the $Q$ dimension---a fundamentally harder task. The fact that it approaches POD-level accuracy with such sparse coverage of the parameter space demonstrates the effectiveness of the neural network approach.
 
 \subsection{Why POD Cannot Cross Positions}
-POD modes represent the spatial structure of a specific flow configuration. Center-blowing modes capture a centrally symmetric plume; eccentric-blowing requires modes representing an off-center plume. Unlike the MLP, which can learn to condition its output on $m$, POD offers no mechanism for categorical input variables. Even concatenating center and eccentric snapshots into a joint POD would blend two incompatible spatial patterns rather than learning to switch between them. The MLP's $m$ parameterization enables a single model to serve both configurations---replacing two independent POD models with one network.
+The center-trained POD-ROM used here does not transfer directly to eccentric blowing because its modes are learned from a center-symmetric plume structure. Parametric, local, or clustered POD variants may alleviate this limitation, but they require additional snapshots and mode-management strategies per configuration. The MLP's $m$ parameterization provides a simpler alternative: a single network serves both configurations without separate model instances.
 
 \subsection{Physics Regularization: When It Helps}
 The continuity constraint provides a consistent but small gain ($+0.014$ $R^{2}$) for the $6\times128$ model, where limited capacity benefits from additional guidance. For the $8\times384$ model, pure data supervision is sufficient. The momentum residual does not help regardless of model size because the DPM bubble buoyancy---the actual plume driver---is absent from the homogeneous RANS formulation. BC constraints are unnecessary because the no-slip condition is implicitly encoded in the CFD data. These findings suggest that for CFD-informed surrogate problems where training data are dense and noise-free, physics regularization offers diminishing returns as model capacity increases.
@@ -292,7 +292,7 @@ The continuity constraint provides a consistent but small gain ($+0.014$ $R^{2}$
 (1) Steady-state only---transient slag eye dynamics require time-resolved training. (2) No explicit bubble physics in the surrogate---DPM momentum is encoded in CFD data, not in the model. (3) Single ladle geometry. (4) Three training $Q$ values---the zero extrapolation degradation suggests this is sufficient for the studied range, but outer bounds remain untested. (5) Kriging GPR (2000 inducing points) diverged on the $9.3\times10^{5}$-cell four-dimensional input space due to memory constraints; KAN encountered toolchain barriers on the Windows platform. These methods were not evaluated as formal baselines, representing a gap in the comparison. Future work will extend this framework in three directions: (1) time-resolved CFD training data to capture transient slag eye opening and closing dynamics, (2) structural feature extraction from plume-induced flow patterns (e.g., recirculation zone topology, interface deformation metrics) as inputs to downstream prediction models, and (3) a coupled inclusion transport and removal-rate prediction model built on the surrogate flow field---combining the high-throughput CFD-DPM data-generation framework of the companion study \cite{liu2026cfd} with the rapid surrogate inference demonstrated here.
 
 \FloatBarrier\section{Conclusion}
-A CFD-informed surrogate using VOF-based domain decomposition and an $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied operating range. Joint $m\in\{0,1\}$ training recovers $R^{2}=0.94$--$0.97$ for eccentric-blowing. Six baselines were compared. POD-ROM achieves the best center-blowing accuracy ($R^{2}=0.994$) but collapses across injection positions because spatial modes do not transfer between configurations---each position requires an independent POD model. The proposed surrogate with $m$ parameterization replaces two POD models with one network, predicting the full field in $\sim$5 seconds.
+A CFD-informed surrogate using VOF-based domain decomposition and an $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied operating range. Joint $m\in\{0,1\}$ training recovers $R^{2}=0.94$--$0.97$ for eccentric-blowing. Several representative baselines were compared. POD-ROM achieves the best center-blowing accuracy ($R^{2}=0.994$) but does not transfer across injection positions in its present form. The proposed surrogate with $m$ parameterization provides a single-network alternative, predicting the full field in $\sim$5 seconds.
 
 \section*{Acknowledgments}
 Supported by National Key R\&D Program of China (2023YFB3712401).
