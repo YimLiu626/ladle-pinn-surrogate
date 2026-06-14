@@ -10,7 +10,7 @@
 
 \begin{document}
 
-\title{A CFD-Informed Surrogate for Rapid Flow Prediction in an Argon-Stirred Ladle: VOF-Based Domain Decomposition, Cross-Position Generalization, and Multi-Baseline Benchmarking}
+\title{A VOF-Guided Neural Surrogate for Position-Conditioned Flow Prediction and Operating-Parameter Evaluation in Argon-Stirred Ladle Refining}
 
 \author[shu]{Yiming Liu}
 \author[shu]{Wentao Zhang}
@@ -20,11 +20,11 @@
 \address[shu]{School of Materials Science and Engineering \& State Key Laboratory of Advanced Special Steel, Shanghai University, Shanghai 200444, PR China}
 
 \begin{abstract}
-Repeated CFD simulations of argon-stirred ladle flow are computationally prohibitive when multiple operating conditions must be evaluated. This study develops a CFD-informed surrogate combining volume-of-fluid (VOF)-based domain decomposition with neural network regression for rapid prediction of the statistically steady liquid-steel flow field under varying gas flow rates ($Q$) and injection positions ($m$). The key insight is that restricting the learning problem to the steel phase---where the three-phase VOF equations reduce rigorously to single-phase incompressible RANS---eliminates ill-conditioned multiphase residuals without requiring interface boundary conditions. An $8\times384$ SiLU multilayer perceptron trained on VOF-filtered steel-phase data achieves $R^{2}=0.983$ for center-blowing with near-zero extrapolation degradation. A binary injection-position parameter $m\in\{0,1\}$ enables cross-position generalization: joint training recovers $R^{2}=0.94$--$0.97$ for eccentric-blowing, whereas a center-only model collapses ($R^{2}<0$). Six baselines are compared. Proper orthogonal decomposition (POD-ROM) achieves the highest center-blowing accuracy ($R^{2}=0.994$) with only two spatial modes, confirming the low-rank nature of $Q$-dependent flow variation. However, POD modes are tied to a specific spatial structure and fail completely across injection positions ($R^{2}<0$). The proposed surrogate replaces two separate POD models with a single network, predicting the full three-dimensional field in $\sim$5 seconds per operating condition.
+Repeated CFD simulations of argon-stirred ladle flow are computationally prohibitive when multiple operating conditions must be evaluated. This study develops a VOF-guided neural surrogate combining volume-of-fluid (VOF)-based domain decomposition with multilayer perceptron regression for rapid prediction of the statistically steady liquid-steel flow field under varying gas flow rates ($Q$) and injection positions ($m$). VOF filtering restricts training to the steel-containing computational subdomain ($\alpha_{\rm steel}>0.01$), where the bulk flow is dominated by the steel phase. An $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied $Q$ range. A binary injection-position parameter $m\in\{0,1\}$ enables a position-conditioned surrogate: a joint model trained on both center and eccentric data recovers $R^{2}=0.94$--$0.97$ for eccentric blowing while maintaining center-blowing accuracy. Proper orthogonal decomposition (POD-ROM) achieves the best center-blowing accuracy ($R^{2}=0.994$) but does not transfer across injection positions in its present center-trained form, illustrating the challenge of modeling configuration-dependent flow topology with a single reduced basis. The proposed surrogate predicts the full three-dimensional field in $\sim$5 seconds per operating condition, enabling rapid flow-field evaluation for engineering applications.
 \end{abstract}
 
 \begin{keyword}
-CFD; Surrogate modeling; Ladle furnace; VOF; Cross-position generalization; POD-ROM; Neural network
+VOF-filtered neural surrogate; Ladle furnace; Position-conditioned prediction; POD-ROM; CFD-informed machine learning; Engineering application
 \end{keyword}
 
 \maketitle
@@ -35,11 +35,11 @@ Ladle furnace (LF) refining is critical for controlling steel cleanliness, therm
 
 CFD coupled with VOF and DPM has become a standard tool for ladle hydrodynamics \cite{liu2019numerical,ersson2008fluid,cloete2010mathematical}. A companion CFD study by the present authors \cite{liu2026cfd} employs the same VOF-DPM framework---molten steel, slag, and top air resolved via Eulerian VOF, argon bubbles tracked as Lagrangian DPM particles---applied to the same 40-ton gas-stirred ladle geometry across five argon flow rates (40--120 NL/min). However, high-fidelity multiphase simulations require upwards of 36 hours per case, making multi-condition evaluation prohibitive. Machine learning surrogates provide predictions orders of magnitude faster \cite{brunton2020machine}. Physics-informed neural networks (PINNs) incorporate governing-equation residuals into training \cite{raissi2019physics,karniadakis2021physics}, with applications across fluid mechanics \cite{cai2021physics,cuomo2022scientific}. Challenges include training instability \cite{wang2021understanding} and multiphase interface handling \cite{jin2021nsfnet}.
 
-A key challenge for ladle-flow surrogates is the three-phase system spanning four orders of magnitude in density. Enforcing Navier--Stokes residuals across the entire domain is ill-conditioned. We propose a VOF-based domain decomposition: in pure-steel cells ($\alpha_{\rm steel}\to 1$), the VOF mixture equations reduce to single-phase incompressible RANS. Rather than solving multiphase equations within the network, we restrict the learning problem to the steel phase through VOF filtering. A binary injection-position parameter $m\in\{0,1\}$ enables a single surrogate for both center-bottom and eccentric-bottom blowing.
+A key challenge for ladle-flow surrogates is the three-phase system spanning four orders of magnitude in density. We propose a VOF-guided domain restriction: filtering training data to $\alpha_{\rm steel}>0.01$ defines a steel-containing computational subdomain. While individual cells with $\alpha_{\rm steel}\approx0.01$ are not pure steel, the bulk of the filtered region satisfies $\alpha_{\rm steel}\approx1$ where the mixture equations approach single-phase behavior. This avoids the ill-conditioned multiphase residual problem without requiring explicit interface boundary conditions. A binary injection-position parameter $m\in\{0,1\}$ enables a position-conditioned surrogate serving both center-bottom and eccentric-bottom blowing configurations from a single model.
 
-Projection-based reduced-order models such as POD-ROM \cite{benner2015survey} offer an alternative surrogate paradigm, decomposing the flow field into spatial modes and interpolating mode coefficients across operating conditions. While effective for single-configuration problems, POD modes are tied to a specific spatial structure and cannot generalize across injection positions.
+Projection-based reduced-order models such as POD-ROM \cite{benner2015survey} offer an alternative surrogate paradigm. While effective for single-configuration problems, the center-trained POD model used in this study does not transfer to eccentric blowing---its modes capture a center-symmetric plume structure that does not represent off-center flow topology. More advanced parametric or local POD strategies may alleviate this limitation, but they require additional configuration-specific snapshots or mode-management strategies.
 
-Contributions: (1) VOF-based domain decomposition that restricts learning to the steel phase; (2) $m$ parameterization enabling cross-position generalization with a single model; (3) six-baseline comparison including POD-ROM; (4) demonstration that POD fails across injection positions while the proposed surrogate succeeds; (5) surrogate achieving $R^{2}=0.983$ with 5-second inference.
+Contributions: (1) VOF-based domain restriction that defines a steel-containing training subdomain; (2) $m$ parameterization enabling a position-conditioned surrogate; (3) baseline comparison including POD-ROM, demonstrating the trade-off between single-configuration accuracy and multi-position capability; (4) surrogate achieving $R^{2}=0.983$ with 5-second inference; (5) open-source release of code, trained models, and benchmark data.
 
 \section{CFD Model}
 
@@ -105,7 +105,7 @@ Five center-blowing ($Q=40$--$120$ NL/min) and three eccentric-blowing ($Q=40,80
 \end{figure}
 
 \subsection{VOF-Based Domain Decomposition}
-The central idea is to restrict the learning problem to the steel phase. In pure-steel cells ($\alpha_{\rm steel}\to 1$): $\rho\to\rho_{\rm steel}$, $\mu\to\mu_{\rm steel}$, $\mathbf{F}_{\sigma}\to 0$, and the VOF mixture equations reduce to single-phase incompressible RANS. Rather than solving multiphase equations within the network---which would be ill-conditioned across a four-order-of-magnitude density range---we simply filter the training data to $\alpha_{\rm steel}>0.01$. This filter eliminates slag and gas cells where the mixture momentum balance is ill-defined.
+The central idea is to restrict learning to the steel-dominated computational subdomain. Filtering training data to $\alpha_{\rm steel}>0.01$ eliminates slag and gas cells where the mixture momentum balance spans four orders of magnitude. While cells with $\alpha_{\rm steel}\approx0.01$ are not pure steel, the bulk of the filtered region satisfies $\alpha_{\rm steel}\approx1$, where the VOF mixture equations approach single-phase incompressible RANS. This avoids ill-conditioned multiphase residuals without explicit interface boundary conditions.
 
 For physics-informed training, a soft spatial decay function deactivates continuity constraints near the interface:
 $w_{\rm pde}=w_{\rm data}\cdot 0.5[1+\cos(\pi\cdot\min((z_{\rm top}-z)/T,1))]$
@@ -134,6 +134,22 @@ with $z_{\rm top}=1.85$ m, $T=0.20$ m. However, as shown in Section~\ref{sec:res
 
 \subsection{Network Architecture and Training}
 The model maps $(x,y,z,Q,m)$ to $(\hat{u},\hat{v},\hat{w},\hat{p})$ via an $8\times 384$ SiLU MLP (1.04M parameters). Outputs use z-score normalization per channel. For ablation studies, a $6\times 128$ variant (84K parameters) is used. A continuity residual $\mathcal{R}_{\rm cont}=\nabla\cdot\mathbf{u}$ evaluated in physical space is available as an optional regularization term. Wall no-slip is enforced on steel-region boundary points ($\sim$42K points). Training: Adam (lr $=10^{-3}$), batch 8192, 2500 epochs, RTX 5070 GPU ($\sim$5 min). Inference: $\sim$5 s for $9.3\times 10^{5}$ cells.
+
+\subsection{Training and Evaluation Protocols}
+Three evaluation protocols with distinct train/test splits were defined (Table~\ref{tab:split}): (1) \textit{Center-only surrogate}: trained on center $Q=40,60,80$ NL/min, tested on center $Q=100,120$ NL/min for flow-rate extrapolation assessment. (2) \textit{Position-conditioned surrogate}: trained on center $Q=40,60,80$ and eccentric $Q=40,80$ NL/min, tested on center $Q=100,120$ and eccentric $Q=120$ NL/min. This split evaluates whether a single model can serve both injection positions when both are represented in training. (3) \textit{Unseen-position test}: a center-only model tested on all eccentric data to confirm that injection position must be explicitly encoded.
+
+\begin{table}[h]
+\centering
+\caption{Training and evaluation protocols.}
+\label{tab:split}
+\begin{tabular}{lll}
+\toprule Protocol & Training set & Test set \\ \midrule
+Center-only & Center $Q=40,60,80$ & Center $Q=100,120$ \\
+Position-conditioned & Center $Q=40,60,80$ + Ecc. $Q=40,80$ & Center $Q=100,120$ + Ecc. $Q=120$ \\
+Unseen-position & Center $Q=40,60,80$ & All eccentric $Q=40,80,120$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{POD-ROM Baseline}
 POD-ROM was implemented as a comparative baseline. Velocity magnitude snapshots from three training cases ($Q=40,60,80$ NL/min) form a snapshot matrix $\mathbf{X}\in\mathbb{R}^{3\times N}$ where $N=932{,}079$. SVD of the centered matrix yields two spatial modes capturing 100\% of snapshot variance. Mode coefficients are interpolated to test $Q$ values via thin-plate-spline RBF. Due to the smooth $Q$-dependence of the flow field, this approach achieves near-perfect reconstruction. However, because POD modes are tied to the spatial structure of a specific injection configuration, the model cannot generalize across positions---a limitation demonstrated in Section~\ref{sec:results_cross}.
