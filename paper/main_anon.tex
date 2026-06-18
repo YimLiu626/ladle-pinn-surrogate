@@ -16,6 +16,8 @@
 \author[1]{Anonymous Authors}
 \affil[1]{Anonymous Institution}
 
+\maketitle
+
 \begin{abstract}
 Repeated CFD simulations of argon-stirred ladle flow are computationally prohibitive when multiple operating conditions must be evaluated. This study develops a VOF-guided neural surrogate combining volume-of-fluid (VOF)-based domain decomposition with multilayer perceptron regression for rapid prediction of the statistically steady liquid-steel flow field under varying gas flow rates ($Q$) and injection positions ($m$). VOF filtering restricts training to the steel-containing computational subdomain ($\alpha_{\rm steel}>0.01$), where the bulk flow is dominated by the steel phase. An $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied $Q$ range. A binary injection-position parameter $m\in\{0,1\}$ enables a position-conditioned surrogate: a joint model trained on both center and eccentric data achieves $R^{2}=0.969$ on the held-out eccentric $Q=120$ NL/min case, while retaining high accuracy on the eccentric training cases ($Q=40,80$ NL/min). Proper orthogonal decomposition (POD-ROM) achieves the best center-blowing accuracy ($R^{2}=0.994$) but does not transfer across injection positions in its present center-trained form, illustrating the challenge of modeling configuration-dependent flow topology with a single reduced basis. The proposed surrogate predicts the full three-dimensional field in $\sim$5 seconds per operating condition, enabling rapid flow-field evaluation for engineering applications.
 \end{abstract}
@@ -23,13 +25,11 @@ Repeated CFD simulations of argon-stirred ladle flow are computationally prohibi
 \bigskip
 \noindent\textbf{Keywords:} VOF-filtered neural surrogate; Ladle furnace; Position-conditioned prediction; POD-ROM; CFD-informed machine learning.
 
-\maketitle
-
 \section{Introduction}
 
 Ladle furnace (LF) refining is critical for controlling steel cleanliness, thermal uniformity, and compositional homogeneity \cite{liu2026cfd}. During bottom argon stirring, the injected gas forms a buoyancy-driven plume that induces strong recirculation \cite{mazumdar1995physical}, enhancing mixing and promoting inclusion transport \cite{li2020numerical}. Excessively strong stirring may expose steel through slag eye formation, increasing re-oxidation risk \cite{jonsson1996modeling}. Reliable flow-field prediction is therefore fundamental to process optimization.
 
-CFD coupled with VOF and DPM has become a standard tool for ladle hydrodynamics \cite{liu2019numerical,ersson2008fluid,cloete2010mathematical}. A companion CFD study by the present authors \cite{liu2026cfd} employs the same VOF-DPM framework---molten steel, slag, and top air resolved via Eulerian VOF, argon bubbles tracked as Lagrangian DPM particles---applied to the same 40-ton gas-stirred ladle geometry across five argon flow rates (40--120 NL/min). However, high-fidelity multiphase simulations require upwards of 36 hours per case, making multi-condition evaluation prohibitive. Machine learning surrogates provide predictions orders of magnitude faster \cite{brunton2020machine}. Physics-informed neural networks (PINNs) incorporate governing-equation residuals into training \cite{raissi2019physics,karniadakis2021physics}, with applications across fluid mechanics \cite{cai2021physics,cuomo2022scientific}. Challenges include training instability \cite{wang2021understanding} and multiphase interface handling \cite{jin2021nsfnet}.
+CFD coupled with VOF and DPM has become a standard tool for ladle hydrodynamics \cite{liu2019numerical,ersson2008fluid,cloete2010mathematical}. A companion CFD-DPM study \cite{liu2026cfd} describes the same VOF-DPM framework---molten steel, slag, and top air resolved via Eulerian VOF, argon bubbles tracked as Lagrangian DPM particles---applied to the same 40-ton gas-stirred ladle geometry across five argon flow rates (40--120 NL/min). However, high-fidelity multiphase simulations require upwards of 36 hours per case, making multi-condition evaluation prohibitive. Machine learning surrogates provide predictions orders of magnitude faster \cite{brunton2020machine}. Physics-informed neural networks (PINNs) incorporate governing-equation residuals into training \cite{raissi2019physics,karniadakis2021physics}, with applications across fluid mechanics \cite{cai2021physics,cuomo2022scientific}. Challenges include training instability \cite{wang2021understanding} and multiphase interface handling \cite{jin2021nsfnet}.
 
 A key challenge for ladle-flow surrogates is the three-phase system spanning four orders of magnitude in density. We propose a VOF-guided domain restriction: filtering training data to $\alpha_{\rm steel}>0.01$ defines a steel-containing computational subdomain. While individual cells with $\alpha_{\rm steel}\approx0.01$ are not pure steel, the bulk of the filtered region satisfies $\alpha_{\rm steel}\approx1$ where the mixture equations approach single-phase behavior. This avoids the ill-conditioned multiphase residual problem without requiring explicit interface boundary conditions. A binary injection-position parameter $m\in\{0,1\}$ enables a position-conditioned surrogate serving both center-bottom and eccentric-bottom blowing configurations from a single model.
 
@@ -93,9 +93,11 @@ Five center-blowing ($Q=40$--$120$ NL/min) and three eccentric-blowing ($Q=40,80
 
 \section{Methodology}
 
+The overall framework is illustrated in Fig.~\ref{fig:framework}.
+
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig1_framework.png}
+\includegraphics[width=\textwidth]{../pic/Fig1.png}
 \caption{Overview of the proposed CFD-informed surrogate framework.}
 \label{fig:framework}
 \end{figure}
@@ -123,7 +125,7 @@ with $z_{\rm top}=1.85$ m, $T=0.20$ m. However, as shown in Section~\ref{sec:res
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig2_vof_stratification.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig2_VOF_stratification.png}
 \caption{Three-phase stratification. (a) Steel, slag, and top-gas profiles---identical across $Q$. (b) Interface detail.}
 \label{fig:vof}
 \end{figure}
@@ -138,7 +140,8 @@ Three evaluation protocols with distinct train/test splits were defined (Table~\
 \centering
 \caption{Training and evaluation protocols.}
 \label{tab:split}
-\begin{tabular}{lp{3.5cm}p{3.5cm}}
+\small
+\begin{tabular}{lll}
 \toprule Protocol & Training set & Test set \\ \midrule
 Center-only & Center $Q=40,60,80$ & Center $Q=100,120$ \\
 Position-conditioned & Center $Q=40,60,80$ + Ecc.\ $Q=40,80$ & Center $Q=100,120$ + Ecc.\ $Q=120$ \\
@@ -151,7 +154,7 @@ Unseen-position & Center $Q=40,60,80$ & Ecc.\ $Q=40,80,120$ (all) \\
 POD-ROM was implemented as a comparative baseline. Velocity magnitude snapshots from three training cases ($Q=40,60,80$ NL/min) form a snapshot matrix $\mathbf{X}\in\mathbb{R}^{3\times N}$ where $N=932{,}079$. SVD of the centered matrix yields two spatial modes capturing 100\% of snapshot variance. Mode coefficients are interpolated to test $Q$ values via thin-plate-spline RBF. Due to the smooth $Q$-dependence of the flow field, this approach achieves near-perfect reconstruction. However, because POD modes are tied to the spatial structure of a specific injection configuration, the model cannot generalize across positions---a limitation demonstrated in Section~\ref{sec:results_cross}.
 
 \section{Experimental Setup}
-Evaluation followed the three protocols defined in Table~\ref{tab:split}. For the center-only protocol, $Q=40,60,80$ NL/min were used for training and $Q=100,120$ NL/min for testing. For the position-conditioned protocol, center $Q=40,60,80$ and eccentric $Q=40,80$ NL/min were used for training, while center $Q=100,120$ and eccentric $Q=120$ NL/min were held out. For the unseen-position test, a center-only model was evaluated directly on all eccentric cases. Several representative baselines were evaluated: POD-ROM, MLP $8\times384$, MLP $6\times128$, and DeepONet ($p=50$). Kriging GPR and KAN were attempted but encountered scalability and implementation barriers; these are discussed in Section 6. Metrics: $R^{2}$ on velocity magnitude, per-field $R^{2}$, multi-seed ensemble stability.
+Evaluation followed the three protocols defined in Table~\ref{tab:split}, which summarizes the training and test sets for each protocol. For the center-only protocol, $Q=40,60,80$ NL/min were used for training and $Q=100,120$ NL/min for testing. For the position-conditioned protocol, center $Q=40,60,80$ and eccentric $Q=40,80$ NL/min were used for training, while center $Q=100,120$ and eccentric $Q=120$ NL/min were held out. For the unseen-position test, a center-only model was evaluated directly on all eccentric cases. Several representative baselines were evaluated: POD-ROM, MLP $8\times384$, MLP $6\times128$, and DeepONet ($p=50$). Kriging GPR and KAN were attempted but encountered scalability and implementation barriers; these are discussed in Section 6. Metrics: $R^{2}$ on velocity magnitude, per-field $R^{2}$, multi-seed ensemble stability.
 
 \section{Results}
 
@@ -160,7 +163,7 @@ Three-phase stratification is identical across all five $Q$ values (Fig.~\ref{fi
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_centerline_combined.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig3_centerline.png}
 \caption{Centerline velocity: (a) center-blowing, (b) eccentric-blowing, (c) center relative error, (d) eccentric relative error. Solid: CFD; dashed: prediction.}
 \label{fig:centerline}
 \end{figure}
@@ -173,7 +176,7 @@ Baseline comparison (Fig.~\ref{fig:abl_base}b): POD-ROM achieves the highest cen
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_ablation_baseline.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig4_ablation_baseline.png}
 \caption{(a) Physics term ablation. (b) Baseline comparison.}
 \label{fig:abl_base}
 \end{figure}
@@ -186,7 +189,7 @@ Crucially, the center-trained POD model fails on eccentric data ($R^{2}=-0.77$ t
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.95\textwidth]{figures/fig6_cross_position.pdf}
+\includegraphics[width=0.95\textwidth]{../pic/Fig5_cross_position.png}
 \caption{Cross-position generalization. Center-only models fail; joint model recovers; POD fails catastrophically on eccentric data.}
 \label{fig:cross}
 \end{figure}
@@ -206,7 +209,7 @@ POD center-only & 0.994 & $-0.77$ & $-0.82$ & $-1.40$ \\
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_pod_vs_pinn.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig6_POD_vs_PINN.png}
 \caption{POD cross-position failure vs.\ MLP generalization, $Q=120$ NL/min. (a) POD: center-trained, tested on center ($R^{2}=0.994$). (b) Same POD model tested on eccentric data ($R^{2}=-1.40$). (c) Joint MLP on eccentric data ($R^{2}=0.969$). Bottom: error distributions.}
 \label{fig:pod}
 \end{figure}
@@ -231,28 +234,28 @@ RMSE($|\mathbf{U}|$, m/s) & 0.008 & 0.007 & 0.006 & 0.006 & 0.007 \\
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_scatter.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig7_scatter.png}
 \caption{Per-condition pointwise comparison. Panels (a--e): individual $Q$. Panel (f): all $Q$ combined.}
 \label{fig:scatter}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_3d_error.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig8_3D_error.png}
 \caption{3D prediction error distribution, steel phase. (a--e) Center-blowing. (f) Error histogram. (g--i) Eccentric-blowing.}
 \label{fig:3derror}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig9_performance.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig9_performance.png}
 \caption{(a) Per-condition $R^{2}$. (b) Multi-seed: $0.978\pm0.001$. (c) VOF strategy: filtering vs.\ hard mask.}
 \label{fig:perf}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig7_convergence.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig10_convergence.png}
 \caption{Convergence: (a) training loss, (b) $R^{2}$ evolution, (c) checkpoint values.}
 \label{fig:conv}
 \end{figure}
@@ -262,7 +265,7 @@ Plume core visualization (Fig.~\ref{fig:3d}) reveals the flow structure. The ecc
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_3d_combined.pdf}
+\includegraphics[width=\textwidth]{../pic/Fig11_3D_plume.png}
 \caption{Plume core ($|\mathbf{U}|>0.03$ m/s). (a--e) Center-blowing. (f) Steel volume. (g--i) Eccentric-blowing.}
 \label{fig:3d}
 \end{figure}
@@ -270,17 +273,13 @@ Plume core visualization (Fig.~\ref{fig:3d}) reveals the flow structure. The ecc
 \FloatBarrier\FloatBarrier
 \section{Discussion}
 
-\subsection{Why VOF Filtering Works}
-The benefit of VOF filtering is twofold. First, it removes gas- and slag-dominated cells where mixture properties vary sharply, avoiding the severe ill-conditioning that would affect a full-domain surrogate. Second, the majority of retained cells belong to the steel-dominated bulk region where the flow approaches single-phase behavior. The improvement is therefore not from a strictly pure-steel mask but from a physically motivated restriction of the learning domain. The dominant contribution comes from the filter itself ($+0.344$ $R^{2}$ over hard thresholding; full-domain training collapses).
+The benefit of VOF filtering is twofold. First, it removes gas- and slag-dominated cells where mixture properties vary sharply, avoiding the severe ill-conditioning that would affect a full-domain surrogate. Second, the majority of retained cells belong to the steel-dominated bulk region where the flow approaches single-phase behavior. The improvement is therefore not from a strictly pure-steel mask but from a physically motivated restriction of the learning domain ($+0.344$ $R^{2}$ over hard thresholding; full-domain training collapses).
 
-\subsection{Why POD Outperforms MLP on Center-Blowing}
-POD-ROM's center-blowing accuracy ($R^{2}=0.994$) is not an indictment of the MLP but a reflection of problem structure. With three training snapshots, two SVD modes capture all snapshot variance, and thin-plate-spline RBF interpolation of two smoothly varying coefficients yields near-perfect prediction. The MLP ($R^{2}=0.983$) learns a general 5D$\to$4D mapping from a three-point sampling of the $Q$ dimension---a fundamentally harder task. The fact that it approaches POD-level accuracy with such sparse coverage of the parameter space demonstrates the effectiveness of the neural network approach.
+POD-ROM achieves the best center-blowing accuracy ($R^{2}=0.994$) with only two spatial modes. This is not an indictment of the MLP but a reflection of problem structure: three snapshots yield two modes capturing all variance, and RBF interpolation of smoothly varying coefficients yields near-perfect prediction. The MLP learns a general 5D$\to$4D mapping from a three-point sampling of the $Q$ dimension---a fundamentally harder task. That it approaches POD-level accuracy ($R^{2}=0.983$) demonstrates the effectiveness of the neural network approach.
 
-\subsection{Why POD Cannot Cross Positions}
-The center-trained POD-ROM used here does not transfer directly to eccentric blowing because its modes are learned from a center-symmetric plume structure. Parametric, local, or clustered POD variants may alleviate this limitation, but they require additional snapshots and mode-management strategies per configuration. The MLP's $m$ parameterization provides a simpler alternative: a single network serves both configurations without separate model instances.
+However, the center-trained POD does not transfer to eccentric blowing because its modes capture a center-symmetric plume structure. Parametric, local, or clustered POD variants may alleviate this limitation with additional snapshots per configuration. The MLP's $m$ parameterization provides a simpler alternative: a single network serves both configurations. This trade-off---single-configuration optimality versus multi-configuration flexibility---defines the practical value proposition of the proposed approach.
 
-\subsection{Physics Regularization: When It Helps}
-The continuity constraint provides a consistent but small gain ($+0.014$ $R^{2}$) for the $6\times128$ model, where limited capacity benefits from additional guidance. For the $8\times384$ model, pure data supervision is sufficient. The momentum residual does not help regardless of model size because the DPM bubble buoyancy---the actual plume driver---is absent from the homogeneous RANS formulation. BC constraints are unnecessary because the no-slip condition is implicitly encoded in the CFD data. These findings suggest that for CFD-informed surrogate problems where training data are dense and noise-free, physics regularization offers diminishing returns as model capacity increases.
+Regarding physics-informed regularization, the continuity constraint provides a consistent but small gain ($+0.014$ $R^{2}$) for the $6\times128$ model, where limited capacity benefits from additional guidance. For the $8\times384$ model, pure data supervision is sufficient. The momentum residual does not help because the DPM bubble buoyancy---the actual plume driver---is absent from the homogeneous RANS formulation. BC constraints are unnecessary; no-slip is implicitly encoded in the CFD data. These findings suggest that for CFD-informed surrogate problems with dense, noise-free training data, physics regularization offers diminishing returns as model capacity increases.
 
 \subsection{Limitations}
 (1) Steady-state only---transient slag eye dynamics require time-resolved training. (2) No explicit bubble physics in the surrogate---DPM momentum is encoded in CFD data, not in the model. (3) Single ladle geometry. (4) Three training $Q$ values---the zero extrapolation degradation suggests this is sufficient for the studied range, but outer bounds remain untested. (5) Kriging GPR (2000 inducing points) diverged on the $9.3\times10^{5}$-cell four-dimensional input space due to memory constraints; KAN encountered toolchain barriers on the Windows platform. These methods were not evaluated as formal baselines, representing a gap in the comparison. Future work will extend this framework in three directions: (1) time-resolved CFD training data to capture transient slag eye opening and closing dynamics, (2) structural feature extraction from plume-induced flow patterns (e.g., recirculation zone topology, interface deformation metrics) as inputs to downstream prediction models, and (3) a coupled inclusion transport and removal-rate prediction model built on the surrogate flow field---combining the high-throughput CFD-DPM data-generation framework of the companion study \cite{liu2026cfd} with the rapid surrogate inference demonstrated here.
@@ -289,7 +288,7 @@ The continuity constraint provides a consistent but small gain ($+0.014$ $R^{2}$
 A CFD-informed surrogate using VOF-based domain decomposition and an $8\times384$ SiLU MLP achieves $R^{2}=0.983$ for center-blowing with negligible degradation within the studied operating range. Joint $m\in\{0,1\}$ training recovers $R^{2}=0.94$--$0.97$ for eccentric-blowing. Several representative baselines were compared. POD-ROM achieves the best center-blowing accuracy ($R^{2}=0.994$) but does not transfer across injection positions in its present form. The proposed surrogate with $m$ parameterization provides a single-network alternative, predicting the full field in $\sim$5 seconds.
 
 \section*{Acknowledgments}
-Supported by National Key R\&D Program of China (2023YFB3712401).
+[Acknowledgments anonymized for peer review]
 
 \section*{Author Contributions}
 [Anonymous for peer review]
@@ -300,7 +299,7 @@ The CFD-DPM simulation code and surrogate modeling code are available at anonymo
 \bibliographystyle{unsrtnat}
 \begin{thebibliography}{99}
 
-\bibitem{liu2026cfd} Anonymous. A cell-localized bucket search method for conservative bubble-inclusion contact screening in industrial CFD-DPM simulations. \textit{Advances in Manufacturing}, 2026 (under review).
+\bibitem{liu2026cfd} Anonymous. A cell-localized bucket search method for conservative bubble-inclusion contact screening. \textit{Under review}, 2026.
 
 \bibitem{mazumdar1995physical} Mazumdar D., Guthrie R.I.L. The physical and mathematical modelling of gas stirred ladle systems. \textit{ISIJ International}, 1995, 35(1): 1--20.
 
